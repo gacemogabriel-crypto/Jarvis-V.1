@@ -7,11 +7,21 @@ function jsonResponse(data, status = 200) {
   return Response.json(data, { status });
 }
 
+function parseJson(text, label) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(
+      `${label} returned invalid JSON: ${text.slice(0, 180)}`
+    );
+  }
+}
+
 async function callGroq({
   messages,
   model,
-  maxTokens = 800,
-  temperature = 0.1
+  maxTokens = 900,
+  temperature = 0
 }) {
   const response = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
@@ -32,21 +42,12 @@ async function callGroq({
   );
 
   const responseText = await response.text();
-
-  let result;
-
-  try {
-    result = JSON.parse(responseText);
-  } catch {
-    throw new Error(
-      `Groq returned invalid JSON: ${responseText.slice(0, 180)}`
-    );
-  }
+  const result = parseJson(responseText, "Groq");
 
   if (!response.ok) {
     throw new Error(
       result?.error?.message ||
-      `Groq request failed with status ${response.status}.`
+        `Groq request failed with status ${response.status}.`
     );
   }
 
@@ -60,7 +61,7 @@ async function callGroq({
   return content;
 }
 
-async function searchWeb(query) {
+async function searchWeb(query, maxResults = 5) {
   const response = await fetch(
     "https://api.tavily.com/search",
     {
@@ -73,69 +74,58 @@ async function searchWeb(query) {
         query,
         topic: "general",
         search_depth: "advanced",
-        max_results: 5,
+        max_results: maxResults,
         include_answer: false,
-        include_raw_content: false
+        include_raw_content: false,
+        include_images: true,
+        include_image_descriptions: true
       }),
       signal: AbortSignal.timeout(20000)
     }
   );
 
   const responseText = await response.text();
-
-  let result;
-
-  try {
-    result = JSON.parse(responseText);
-  } catch {
-    throw new Error(
-      `Tavily returned invalid JSON: ${responseText.slice(0, 180)}`
-    );
-  }
+  const result = parseJson(responseText, "Tavily");
 
   if (!response.ok) {
     throw new Error(
       result?.detail ||
-      result?.message ||
-      `Search failed with status ${response.status}.`
+        result?.message ||
+        `Search failed with status ${response.status}.`
     );
   }
 
-  return Array.isArray(result.results)
-    ? result.results
-    : [];
+  return {
+    results: Array.isArray(result.results)
+      ? result.results
+      : [],
+    images: Array.isArray(result.images)
+      ? result.images
+      : []
+  };
 }
 
-function extractSection(text, sectionName) {
-  const escapedName = sectionName.replace(
-    /[.*+?^${}()|[\]\\]/g,
-    "\\$&"
-  );
-
-  const expression = new RegExp(
-    `${escapedName}:\\s*([\\s\\S]*?)(?=\\n[A-Z_]+:|$)`,
-    "i"
-  );
-
-  return text.match(expression)?.[1]?.trim() || "";
+function cleanJsonBlock(text) {
+  return text
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/\s*```$/, "")
+    .trim();
 }
 
-function extractQueries(text) {
-  const querySection = extractSection(
-    text,
-    "SEARCH_QUERIES"
-  );
+function parseModelJson(text, label) {
+  return parseJson(cleanJsonBlock(text), label);
+}
 
-  const lines = querySection
-    .split("\n")
-    .map(line =>
-      line
-        .replace(/^[-*•\d.)\s]+/, "")
-        .trim()
+function uniqueStrings(values, limit) {
+  return [
+    ...new Set(
+      values
+        .filter(value => typeof value === "string")
+        .map(value => value.trim())
+        .filter(Boolean)
     )
-    .filter(Boolean);
-
-  return [...new Set(lines)].slice(0, 5);
+  ].slice(0, limit);
 }
 
 function normalizeUrl(url) {
@@ -144,16 +134,14 @@ function normalizeUrl(url) {
 
     parsed.hash = "";
 
-    const removableParameters = [
+    [
       "utm_source",
       "utm_medium",
       "utm_campaign",
       "utm_term",
       "utm_content",
       "ref"
-    ];
-
-    removableParameters.forEach(parameter => {
+    ].forEach(parameter => {
       parsed.searchParams.delete(parameter);
     });
 
@@ -163,55 +151,86 @@ function normalizeUrl(url) {
   }
 }
 
-function deduplicateResults(searchGroups) {
+function combineSearches(searches) {
   const seenUrls = new Set();
-  const combined = [];
+  const results = [];
+  const images = [];
 
-  searchGroups.forEach(group => {
-    group.results.forEach(result => {
-      const normalizedUrl = normalizeUrl(result.url);
+  for (const search of searches) {
+    for (const result of search.data.results) {
+      const url = normalizeUrl(result.url);
 
-      if (!normalizedUrl || seenUrls.has(normalizedUrl)) {
-        return;
+      if (!url || seenUrls.has(url)) {
+        continue;
       }
 
-      seenUrls.add(normalizedUrl);
+      seenUrls.add(url);
 
-      combined.push({
-        query: group.query,
+      results.push({
+        query: search.query,
         title: result.title || "Untitled",
-        url: normalizedUrl,
-        content: result.content || "No summary available.",
-        score:
-          typeof result.score === "number"
-            ? result.score
-            : null
+        url,
+        content:
+          result.content || "No summary available."
       });
-    });
-  });
+    }
 
-  return combined.slice(0, 20);
+    for (const image of search.data.images) {
+      if (typeof image === "string") {
+        images.push({
+          query: search.query,
+          url: image,
+          description: ""
+        });
+      } else if (image?.url) {
+        images.push({
+          query: search.query,
+          url: image.url,
+          description: image.description || ""
+        });
+      }
+    }
+  }
+
+  return {
+    results: results.slice(0, 25),
+    images: images.slice(0, 25)
+  };
 }
 
-function formatEvidence(results) {
+function formatResults(results) {
   if (results.length === 0) {
-    return "No useful web results were found.";
+    return "No useful text results were found.";
   }
 
   return results
     .map((result, index) => {
       return [
         `SOURCE ${index + 1}`,
-        `Search query: ${result.query}`,
+        `Query: ${result.query}`,
         `Title: ${result.title}`,
         `URL: ${result.url}`,
-        `Summary: ${result.content}`,
-        result.score !== null
-          ? `Search relevance score: ${result.score}`
-          : ""
-      ]
-        .filter(Boolean)
-        .join("\n");
+        `Summary: ${result.content}`
+      ].join("\n");
+    })
+    .join("\n\n");
+}
+
+function formatImages(images) {
+  if (images.length === 0) {
+    return "No image descriptions were returned.";
+  }
+
+  return images
+    .map((image, index) => {
+      return [
+        `IMAGE RESULT ${index + 1}`,
+        `Query: ${image.query}`,
+        `URL: ${image.url}`,
+        `Description: ${
+          image.description || "No description available."
+        }`
+      ].join("\n");
     })
     .join("\n\n");
 }
@@ -228,26 +247,19 @@ export default {
     try {
       if (!process.env.GROQ_API_KEY) {
         return jsonResponse(
-          {
-            error:
-              "GROQ_API_KEY is missing in Vercel."
-          },
+          { error: "GROQ_API_KEY is missing in Vercel." },
           500
         );
       }
 
       if (!process.env.TAVILY_API_KEY) {
         return jsonResponse(
-          {
-            error:
-              "TAVILY_API_KEY is missing in Vercel."
-          },
+          { error: "TAVILY_API_KEY is missing in Vercel." },
           500
         );
       }
 
       const body = await request.json();
-
       const image = body.image;
 
       const userPrompt =
@@ -256,85 +268,50 @@ export default {
           ? body.prompt.trim()
           : "Identify this image accurately.";
 
-      const memories = Array.isArray(body.memories)
-        ? body.memories
-            .filter(
-              memory => typeof memory === "string"
-            )
-            .slice(-30)
-        : [];
-
       if (
         typeof image !== "string" ||
         !image.startsWith("data:image/")
       ) {
         return jsonResponse(
-          {
-            error:
-              "No valid image was received."
-          },
+          { error: "No valid image was received." },
           400
         );
       }
 
       /*
        * STAGE 1
-       * Extract objective visual evidence and create
-       * five independent search queries.
+       * Extract visible features without committing
+       * to one identity.
        */
 
-      const visualAnalysis = await callGroq({
+      const extractionText = await callGroq({
         model: VISION_MODEL,
-        maxTokens: 900,
-        temperature: 0,
+        maxTokens: 1000,
         messages: [
           {
             role: "system",
             content: [
-              "You are the visual evidence extraction module of JARVIS.",
+              "You are JARVIS's objective visual examiner.",
+              "Describe only details that are visibly present.",
+              "Do not let a possible identity alter the description.",
               "",
-              "Your task is not to identify the image immediately.",
-              "First extract only objective details that are visibly present.",
-              "Do not mention a franchise, television show, film, game, band, character, person, company, or logo unless visible text proves it.",
-              "Do not allow an early guess to influence every search query.",
+              "Return valid JSON only using this structure:",
+              "{",
+              '  "visibleFeatures": ["feature"],',
+              '  "visibleText": ["text"],',
+              '  "category": "broad category",',
+              '  "candidates": ["candidate or UNKNOWN"],',
+              '  "searchQueries": ["query"]',
+              "}",
               "",
-              "Pay attention to:",
-              "- exact colors",
-              "- number and shape of lines",
-              "- orientation",
-              "- symmetry",
-              "- facial or symbolic features",
-              "- brush, paint, graffiti, print, or digital style",
-              "- drips, breaks, curves, angles, borders, and spacing",
-              "- visible letters or words",
-              "- background and surrounding context",
-              "",
-              "Generate five meaningfully different search queries.",
-              "At least two queries must be purely descriptive.",
-              "At least one query should consider television or film.",
-              "At least one query should consider games, music, comics, or other media.",
-              "Do not repeat the same guessed identity in all five queries.",
-              "",
-              "Return exactly this structure:",
-              "",
-              "VISIBLE_FEATURES:",
-              "A detailed objective description.",
-              "",
-              "VISIBLE_TEXT:",
-              "Exact readable text, or NONE.",
-              "",
-              "OBJECT_CATEGORY:",
-              "A broad category such as symbol, logo, character, object, scene, document, or unknown.",
-              "",
-              "INITIAL_POSSIBILITIES:",
-              "Up to three cautious possibilities, or UNKNOWN.",
-              "",
-              "SEARCH_QUERIES:",
-              "1. First query",
-              "2. Second query",
-              "3. Third query",
-              "4. Fourth query",
-              "5. Fifth query"
+              "Rules:",
+              "- Include exact colors, shapes, line counts, curves, drips, spacing, symmetry, orientation and background.",
+              "- Candidates must be cautious.",
+              "- Include no more than five candidates.",
+              "- Produce five different search queries.",
+              "- At least three queries must not contain a candidate name.",
+              "- Include one television or film query.",
+              "- Include one games, music or comics query."
             ].join("\n")
           },
           {
@@ -342,12 +319,7 @@ export default {
             content: [
               {
                 type: "text",
-                text: [
-                  `User request: ${userPrompt}`,
-                  "",
-                  "Analyze the image using only visible evidence.",
-                  "Do not confidently identify it at this stage."
-                ].join("\n")
+                text: userPrompt
               },
               {
                 type: "image_url",
@@ -360,110 +332,187 @@ export default {
         ]
       });
 
-      let searchQueries =
-        extractQueries(visualAnalysis);
+      const extraction = parseModelJson(
+        extractionText,
+        "Visual analysis"
+      );
 
-      if (searchQueries.length < 3) {
-        const visibleFeatures =
-          extractSection(
-            visualAnalysis,
-            "VISIBLE_FEATURES"
-          ) || visualAnalysis.slice(0, 500);
+      const visibleFeatures = Array.isArray(
+        extraction.visibleFeatures
+      )
+        ? extraction.visibleFeatures
+        : [];
 
-        searchQueries = [
-          `${visibleFeatures} symbol`,
-          `${visibleFeatures} television film symbol`,
-          `${visibleFeatures} logo graffiti`,
-          `${visibleFeatures} fictional symbol`,
-          `${userPrompt} ${visibleFeatures}`
-        ];
-      }
+      let candidates = uniqueStrings(
+        Array.isArray(extraction.candidates)
+          ? extraction.candidates
+          : [],
+        5
+      ).filter(
+        candidate =>
+          candidate.toUpperCase() !== "UNKNOWN"
+      );
 
-      searchQueries = [
-        ...new Set(
-          searchQueries
-            .map(query => query.trim())
-            .filter(Boolean)
-        )
-      ].slice(0, 5);
+      const generalQueries = uniqueStrings(
+        Array.isArray(extraction.searchQueries)
+          ? extraction.searchQueries
+          : [],
+        5
+      );
 
       /*
        * STAGE 2
-       * Run all searches independently.
+       * Broad searches based mainly on visible details.
        */
 
-      const settledSearches =
-        await Promise.allSettled(
-          searchQueries.map(async query => ({
-            query,
-            results: await searchWeb(query)
-          }))
-        );
+      const broadSettled = await Promise.allSettled(
+        generalQueries.map(async query => ({
+          query,
+          data: await searchWeb(query)
+        }))
+      );
 
-      const successfulSearches =
-        settledSearches
-          .filter(
-            result => result.status === "fulfilled"
-          )
-          .map(result => result.value);
+      const broadSearches = broadSettled
+        .filter(result => result.status === "fulfilled")
+        .map(result => result.value);
 
-      if (successfulSearches.length === 0) {
-        throw new Error(
-          "All web searches failed."
-        );
-      }
-
-      const combinedResults =
-        deduplicateResults(successfulSearches);
-
-      const searchEvidence =
-        formatEvidence(combinedResults);
+      const broadEvidence = combineSearches(broadSearches);
 
       /*
        * STAGE 3
-       * Compare visual evidence against all sources.
+       * Use broad evidence to propose additional
+       * candidates without choosing a winner.
        */
 
-      const memoryText =
-        memories.length > 0
-          ? memories
-              .map(memory => `- ${memory}`)
-              .join("\n")
-          : "- No relevant saved memories.";
-
-      const finalReply = await callGroq({
+      const candidateText = await callGroq({
         model: REASONING_MODEL,
-        maxTokens: 1100,
-        temperature: 0,
+        maxTokens: 700,
         messages: [
           {
             role: "system",
             content: [
-              "You are the verification module of JARVIS.",
+              "Generate possible identities for a visual symbol.",
+              "Do not choose a final answer.",
+              "Discard suggestions that match only the mood, genre or color.",
               "",
-              "Your job is to identify an image only when the visual evidence and web evidence support the same conclusion.",
+              "Return valid JSON only:",
+              '{ "candidates": ["candidate"] }',
               "",
-              "Important rules:",
-              "- Treat the initial visual possibilities as unverified hypotheses.",
-              "- Never select an answer merely because one search result mentions it.",
-              "- Shared color, horror style, graffiti style, or a general smile shape is not enough.",
-              "- Compare exact structure, line placement, proportions, drips, text, context, and distinctive marks.",
-              "- Prefer conclusions supported by several independent sources or clearly matching descriptions.",
-              "- Search-result relevance scores are not proof of visual identity.",
-              "- Ignore results that only match broad keywords.",
-              "- If evidence conflicts, lower confidence.",
-              "- If no option has strong support, say the image could not be identified reliably.",
+              "Return no more than six candidates."
+            ].join("\n")
+          },
+          {
+            role: "user",
+            content: [
+              "VISIBLE FEATURES:",
+              visibleFeatures.join("\n"),
               "",
-              "Confidence rules:",
-              "- 90–100%: distinctive match supported by multiple sources.",
-              "- 70–89%: strong match with minor uncertainty.",
-              "- 50–69%: plausible but not verified.",
-              "- Below 50%: do not give a definite identification.",
+              "INITIAL CANDIDATES:",
+              candidates.join("\n") || "None",
+              "",
+              "BROAD SEARCH EVIDENCE:",
+              formatResults(
+                broadEvidence.results.slice(0, 15)
+              )
+            ].join("\n")
+          }
+        ]
+      });
+
+      const suggestedCandidates = parseModelJson(
+        candidateText,
+        "Candidate generation"
+      );
+
+      candidates = uniqueStrings(
+        [
+          ...candidates,
+          ...(Array.isArray(
+            suggestedCandidates.candidates
+          )
+            ? suggestedCandidates.candidates
+            : [])
+        ],
+        6
+      );
+
+      /*
+       * STAGE 4
+       * Search every candidate separately for its
+       * actual symbol and visual description.
+       */
+
+      const candidateSettled =
+        await Promise.allSettled(
+          candidates.map(async candidate => {
+            const query = [
+              `"${candidate}"`,
+              "symbol logo appearance",
+              "red painted dripping smile",
+              "image visual description"
+            ].join(" ");
+
+            return {
+              candidate,
+              query,
+              data: await searchWeb(query, 6)
+            };
+          })
+        );
+
+      const candidateSearches = candidateSettled
+        .filter(result => result.status === "fulfilled")
+        .map(result => result.value);
+
+      const candidateEvidence =
+        combineSearches(candidateSearches);
+
+      /*
+       * STAGE 5
+       * Verify each candidate and reject those whose
+       * actual design does not match the image.
+       */
+
+      const finalReply = await callGroq({
+        model: REASONING_MODEL,
+        maxTokens: 1300,
+        messages: [
+          {
+            role: "system",
+            content: [
+              "You are JARVIS's strict visual identity verifier.",
+              "",
+              "Evaluate every candidate separately.",
+              "A candidate must be rejected when sources do not show or describe the same design.",
+              "",
+              "Do not accept a candidate because:",
+              "- it belongs to a similar genre",
+              "- it involves a serial killer",
+              "- it uses red coloring",
+              "- it has a horror theme",
+              "- it contains a generic smile",
+              "",
+              "Compare exact visual structure:",
+              "- eye shape and direction",
+              "- mouth length and curvature",
+              "- number and position of drips",
+              "- brush or paint style",
+              "- symmetry",
+              "- surrounding marks",
+              "- text",
+              "- documented meaning and context",
+              "",
+              "A final identification requires direct support from at least two useful sources, or one exceptionally clear authoritative source.",
+              "If no candidate passes, say Unable to identify reliably.",
+              "Never invent evidence.",
               "",
               "Return exactly this format:",
               "",
               "Visible details:",
               "...",
+              "",
+              "Candidate checks:",
+              "- Candidate: PASS or REJECT — reason",
               "",
               "Most likely identification:",
               "... or Unable to identify reliably",
@@ -478,7 +527,7 @@ export default {
               "...",
               "",
               "Verification note:",
-              "State whether the conclusion was verified, partially supported, or unverified."
+              "Verified, partially supported, or unverified."
             ].join("\n")
           },
           {
@@ -486,18 +535,35 @@ export default {
             content: [
               `USER REQUEST:\n${userPrompt}`,
               "",
-              `OBJECTIVE VISUAL ANALYSIS:\n${visualAnalysis}`,
+              `VISIBLE FEATURES:\n${visibleFeatures.join(
+                "\n"
+              )}`,
               "",
-              `SEARCH QUERIES USED:\n${searchQueries
-                .map(
-                  (query, index) =>
-                    `${index + 1}. ${query}`
-                )
-                .join("\n")}`,
+              `VISIBLE TEXT:\n${
+                Array.isArray(extraction.visibleText)
+                  ? extraction.visibleText.join("\n")
+                  : "None"
+              }`,
               "",
-              `WEB EVIDENCE:\n${searchEvidence}`,
+              `CANDIDATES TO VERIFY:\n${candidates.join(
+                "\n"
+              )}`,
               "",
-              `SAVED USER INFORMATION:\n${memoryText}`
+              `BROAD TEXT EVIDENCE:\n${formatResults(
+                broadEvidence.results
+              )}`,
+              "",
+              `BROAD IMAGE DESCRIPTIONS:\n${formatImages(
+                broadEvidence.images
+              )}`,
+              "",
+              `CANDIDATE-SPECIFIC TEXT EVIDENCE:\n${formatResults(
+                candidateEvidence.results
+              )}`,
+              "",
+              `CANDIDATE-SPECIFIC IMAGE DESCRIPTIONS:\n${formatImages(
+                candidateEvidence.images
+              )}`
             ].join("\n")
           }
         ]
@@ -505,13 +571,19 @@ export default {
 
       return jsonResponse({
         reply: finalReply,
-        visualAnalysis,
-        searchQueries,
-        sources: combinedResults.map(result => ({
-          title: result.title,
-          url: result.url,
-          query: result.query
-        }))
+        visibleFeatures,
+        candidates,
+        broadQueries: generalQueries,
+        sources: [
+          ...broadEvidence.results,
+          ...candidateEvidence.results
+        ]
+          .slice(0, 30)
+          .map(result => ({
+            title: result.title,
+            url: result.url,
+            query: result.query
+          }))
       });
     } catch (error) {
       const message =
@@ -520,10 +592,7 @@ export default {
           : error?.message ||
             "Unknown identification error.";
 
-      return jsonResponse(
-        { error: message },
-        500
-      );
+      return jsonResponse({ error: message }, 500);
     }
   }
 };
