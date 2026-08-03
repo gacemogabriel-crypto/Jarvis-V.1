@@ -72,7 +72,7 @@ export default {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            model: "qwen/qwen3.6-27b",
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
             messages: [
               {
                 role: "system",
@@ -94,7 +94,7 @@ export default {
                 ]
               }
             ],
-            temperature: 0.7,
+            temperature: 0.2,
             max_completion_tokens: 900,
             reasoning_effort: "none"
           }),
