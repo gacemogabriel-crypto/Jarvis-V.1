@@ -474,3 +474,62 @@ button {
     min-height: 46px;
   }
 }
+.memory-panel {
+  margin-top: 18px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  box-shadow:
+    0 0 25px rgba(0, 181, 255, 0.08),
+    inset 0 0 25px rgba(0, 181, 255, 0.03);
+  backdrop-filter: blur(8px);
+}
+
+.memory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--blue);
+}
+
+#clearMemoriesButton {
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 120, 120, 0.55);
+  background: rgba(160, 30, 30, 0.2);
+  color: #ffb3b3;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.memory-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(92, 220, 255, 0.14);
+  background: rgba(0, 8, 14, 0.65);
+}
+
+.memory-text {
+  line-height: 1.4;
+  color: #d9f7ff;
+}
+
+.delete-memory {
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 120, 120, 0.5);
+  background: rgba(160, 30, 30, 0.16);
+  color: #ffb3b3;
+  font-size: 10px;
+}
+
+.empty-memory {
+  margin: 0;
+  color: rgba(217, 247, 255, 0.55);
+}
