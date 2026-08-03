@@ -230,7 +230,7 @@ async function getJarvisResponse(command) {
     return listMemories();
   }
 
-  const response = await fetch("/api/chat", {
+  const response = await fetch("/api/identify", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
