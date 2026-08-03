@@ -55,64 +55,83 @@ function speak(message) {
   window.speechSynthesis.speak(speech);
 }
 
-function getJarvisResponse(command) {
-  const text = command.toLowerCase();
+const conversationHistory = [];
 
-  if (text.includes("hello") || text.includes("hi jarvis")) {
-    return "Hello. All systems are functioning normally.";
+async function getJarvisResponse(command) {
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      message: command,
+      history: conversationHistory
+    })
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      result.error || "JARVIS could not process the request."
+    );
   }
 
-  if (text.includes("how are you")) {
-    return "I am operating within normal parameters.";
+  conversationHistory.push({
+    role: "user",
+    content: command
+  });
+
+  conversationHistory.push({
+    role: "assistant",
+    content: result.reply
+  });
+
+  if (conversationHistory.length > 20) {
+    conversationHistory.splice(
+      0,
+      conversationHistory.length - 20
+    );
   }
 
-  if (text.includes("your name")) {
-    return "I am JARVIS, your personal digital assistant.";
-  }
-
-  if (text.includes("time")) {
-    return `The current time is ${clock.textContent}.`;
-  }
-
-  if (text.includes("date") || text.includes("day")) {
-    return `Today is ${new Date().toLocaleDateString([], {
-      weekday: "long",
-      month: "long",
-      day: "numeric"
-    })}.`;
-  }
-
-  if (text.includes("dragon ball")) {
-    return "Dragon Ball detected. An excellent choice.";
-  }
-
-  if (text.includes("thank")) {
-    return "You are welcome.";
-  }
-
-  return "I understood your command. My full artificial intelligence system will be connected next.";
+  return result.reply;
 }
 
-function processCommand(command) {
+async function processCommand(command) {
   const cleanCommand = command.trim();
 
   if (!cleanCommand) return;
 
   addMessage("YOU", cleanCommand);
-  statusText.textContent = "PROCESSING COMMAND";
-  coreContainer.classList.add("active");
 
-  setTimeout(() => {
-    const response = getJarvisResponse(cleanCommand);
+  statusText.textContent = "THINKING";
+  coreContainer.classList.add("active");
+  talkButton.disabled = true;
+  sendButton.disabled = true;
+
+  try {
+    const response = await getJarvisResponse(cleanCommand);
 
     addMessage("JARVIS", response);
     speak(response);
 
     statusText.textContent = "AWAITING COMMAND";
-    coreContainer.classList.remove("active");
-  }, 700);
-}
+  } catch (error) {
+    console.error(error);
 
+    statusText.textContent = "AI CONNECTION ERROR";
+
+    addMessage(
+      "JARVIS",
+      error.message ||
+        "I could not connect to my intelligence system."
+    );
+  } finally {
+    coreContainer.classList.remove("active");
+    talkButton.disabled = false;
+    sendButton.disabled = false;
+  }
+}
 sendButton.addEventListener("click", () => {
   processCommand(textInput.value);
   textInput.value = "";
