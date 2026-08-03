@@ -182,10 +182,14 @@ talkButton.addEventListener("click", () => {
     processCommand(transcript);
   };
 
-  recognition.onerror = () => {
-    statusText.textContent = "VOICE RECOGNITION ERROR";
-    addMessage("JARVIS", "I could not understand the voice command.");
-  };
+  recognition.onerror = event => {
+  statusText.textContent = `VOICE ERROR: ${event.error}`;
+
+  addMessage(
+    "JARVIS",
+    `Voice recognition failed. Error: ${event.error}`
+  );
+};
 
   recognition.onend = () => {
     talkButton.innerHTML =
