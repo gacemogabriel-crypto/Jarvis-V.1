@@ -149,58 +149,190 @@ textInput.addEventListener("keydown", event => {
 });
 
 // Voice recognition
-talkButton.addEventListener("click", () => {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+let mediaRecorder;
+let audioChunks = [];
+let microphoneStream;
+let isRecording = false;
 
-  if (!SpeechRecognition) {
-    statusText.textContent = "VOICE INPUT UNAVAILABLE";
-    textInput.focus();
+function chooseRecordingType() {
+  const types = [
+    "audio/mp4",
+    "audio/webm;codecs=opus",
+    "audio/webm"
+  ];
+
+  for (const type of types) {
+    if (
+      window.MediaRecorder &&
+      MediaRecorder.isTypeSupported(type)
+    ) {
+      return type;
+    }
+  }
+
+  return "";
+}
+
+async function startRecording() {
+  try {
+    if (
+      !navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia ||
+      !window.MediaRecorder
+    ) {
+      throw new Error(
+        "Audio recording is not supported on this browser."
+      );
+    }
+
+    microphoneStream =
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+    const mimeType = chooseRecordingType();
+
+    const recorderOptions = mimeType
+      ? { mimeType }
+      : undefined;
+
+    mediaRecorder = new MediaRecorder(
+      microphoneStream,
+      recorderOptions
+    );
+
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+      if (event.data && event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
+    };
+
+    mediaRecorder.onstop = sendRecording;
+
+    mediaRecorder.start();
+
+    isRecording = true;
+
+    statusText.textContent = "RECORDING";
+    talkButton.textContent = "⏹ STOP RECORDING";
+    coreContainer.classList.add("active");
+  } catch (error) {
+    console.error(error);
+
+    statusText.textContent = "MICROPHONE ERROR";
 
     addMessage(
       "JARVIS",
-      "Voice recognition is unavailable here. Please enter your command below."
+      error.message ||
+        "I could not access the microphone."
     );
+  }
+}
 
+function stopRecording() {
+  if (
+    !mediaRecorder ||
+    mediaRecorder.state === "inactive"
+  ) {
     return;
   }
 
-  const recognition = new SpeechRecognition();
+  statusText.textContent = "PROCESSING AUDIO";
+  talkButton.textContent = "PROCESSING...";
 
-  recognition.lang = "en-US";
-  recognition.interimResults = false;
-  recognition.maxAlternatives = 1;
+  mediaRecorder.stop();
 
-  recognition.onstart = () => {
-    statusText.textContent = "LISTENING";
-    talkButton.textContent = "LISTENING...";
-    coreContainer.classList.add("active");
-  };
+  if (microphoneStream) {
+    microphoneStream
+      .getTracks()
+      .forEach(track => track.stop());
+  }
 
-  recognition.onresult = event => {
-    const transcript = event.results[0][0].transcript;
+  isRecording = false;
+}
+
+async function sendRecording() {
+  try {
+    const recordingType =
+      mediaRecorder.mimeType || "audio/mp4";
+
+    const audioBlob = new Blob(audioChunks, {
+      type: recordingType
+    });
+
+    if (audioBlob.size === 0) {
+      throw new Error("The recording was empty.");
+    }
+
+    const fileExtension =
+      recordingType.includes("webm")
+        ? "webm"
+        : "m4a";
+
+    const audioFile = new File(
+      [audioBlob],
+      `jarvis-recording.${fileExtension}`,
+      { type: recordingType }
+    );
+
+    const formData = new FormData();
+    formData.append("file", audioFile);
+
+    const response = await fetch("/api/transcribe", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || "Transcription failed."
+      );
+    }
+
+    const transcript = result.text?.trim();
+
+    if (!transcript) {
+      throw new Error(
+        "I could not detect any speech."
+      );
+    }
+
+    textInput.value = transcript;
     processCommand(transcript);
-  };
+  } catch (error) {
+    console.error(error);
 
-  recognition.onerror = event => {
-  statusText.textContent = `VOICE ERROR: ${event.error}`;
+    statusText.textContent = "TRANSCRIPTION ERROR";
 
-  addMessage(
-    "JARVIS",
-    `Voice recognition failed. Error: ${event.error}`
-  );
-};
+    addMessage(
+      "JARVIS",
+      error.message ||
+        "I could not transcribe the recording."
+    );
+  } finally {
+    audioChunks = [];
+    coreContainer.classList.remove("active");
 
-  recognition.onend = () => {
     talkButton.innerHTML =
       '<span class="microphone">🎙</span> ACTIVATE VOICE';
 
-    coreContainer.classList.remove("active");
-
-    if (statusText.textContent === "LISTENING") {
+    if (
+      statusText.textContent === "PROCESSING AUDIO"
+    ) {
       statusText.textContent = "AWAITING COMMAND";
     }
-  };
+  }
+}
 
-  recognition.start();
+talkButton.addEventListener("click", () => {
+  if (isRecording) {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+});
 });
