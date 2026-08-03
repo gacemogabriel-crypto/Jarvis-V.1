@@ -163,7 +163,7 @@ function renderMemories() {
   renderMemories();
 
   return `Understood. I will remember that ${cleanFact}.`;
-}
+
 
 
 
@@ -181,8 +181,45 @@ function renderMemories() {
   }
 
   return "That information has been removed from my memory.";
-}
 
+/* MEMORY */
+
+function renderMemories() {
+  const jarvisMemories = getMemories();
+
+  memoryList.innerHTML = "";
+
+  if (jarvisMemories.length === 0) {
+    const emptyText = document.createElement("p");
+    emptyText.className = "empty-memory";
+    emptyText.textContent = "No saved memories yet.";
+
+    memoryList.appendChild(emptyText);
+    return;
+  }
+
+  jarvisMemories.forEach((memory, index) => {
+    const item = document.createElement("div");
+    item.className = "memory-item";
+
+    const text = document.createElement("div");
+    text.className = "memory-text";
+    text.textContent = memory;
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "delete-memory";
+    deleteButton.textContent = "DELETE";
+
+    deleteButton.addEventListener("click", () => {
+      deleteMemory(index);
+      renderMemories();
+    });
+
+    item.appendChild(text);
+    item.appendChild(deleteButton);
+    memoryList.appendChild(item);
+  });
+}
 
 /* AI CHAT */
 
@@ -221,7 +258,7 @@ async function getJarvisResponse(command) {
     body: JSON.stringify({
       message: command,
       history: conversationHistory,
-      memories: jarvisMemories
+      memories: getMemories()
     })
   });
 
@@ -598,7 +635,7 @@ analyzeImageButton.addEventListener("click", async () => {
       body: JSON.stringify({
         image: selectedImageData,
         prompt,
-        memories: jarvisMemories
+        memories: getMemories()
       })
     });
 
