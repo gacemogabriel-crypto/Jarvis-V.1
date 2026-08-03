@@ -1,3 +1,11 @@
+import {
+  getMemories,
+  rememberFact,
+  forgetFact,
+  listMemories,
+  deleteMemory,
+  clearMemories
+} from "./js/memory.js";
 const bootScreen = document.getElementById("bootScreen");
 const talkButton = document.getElementById("talkButton");
 const sendButton = document.getElementById("sendButton");
@@ -27,9 +35,7 @@ const visionStatus = document.getElementById("visionStatus");
 
 const conversationHistory = [];
 
-let jarvisMemories = JSON.parse(
-  localStorage.getItem("jarvisMemories") || "[]"
-);
+
 
 let selectedImageData = "";
 let mediaRecorder = null;
@@ -99,12 +105,6 @@ function speak(message) {
 
 /* MEMORY */
 
-function saveMemories() {
-  localStorage.setItem(
-    "jarvisMemories",
-    JSON.stringify(jarvisMemories)
-  );
-}
 
 function renderMemories() {
   memoryList.innerHTML = "";
@@ -142,12 +142,7 @@ function renderMemories() {
   });
 }
 
-function rememberFact(fact) {
-  const cleanFact = fact.trim();
 
-  if (!cleanFact) {
-    return "I need something specific to remember.";
-  }
 
   const alreadyExists = jarvisMemories.some(
     memory =>
@@ -170,12 +165,7 @@ function rememberFact(fact) {
   return `Understood. I will remember that ${cleanFact}.`;
 }
 
-function forgetFact(searchText) {
-  const query = searchText.trim().toLowerCase();
 
-  if (!query) {
-    return "Tell me what you want me to forget.";
-  }
 
   const originalLength = jarvisMemories.length;
 
@@ -193,13 +183,6 @@ function forgetFact(searchText) {
   return "That information has been removed from my memory.";
 }
 
-function listMemories() {
-  if (jarvisMemories.length === 0) {
-    return "I have not saved any personal memories yet.";
-  }
-
-  return `Here is what I remember: ${jarvisMemories.join("; ")}.`;
-}
 
 /* AI CHAT */
 

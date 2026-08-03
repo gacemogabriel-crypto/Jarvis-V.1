@@ -175,6 +175,46 @@
   </div>
 </section>
     </section>
+    <section class="knowledge-panel">
+  <div class="knowledge-header">
+    <span>TEACH JARVIS</span>
+    <span id="knowledgeStatus">READY</span>
+  </div>
+
+  <div class="knowledge-form">
+    <input id="entityName" type="text" placeholder="Name" />
+
+    <input id="entityType" type="text" placeholder="Type, e.g. symbol" />
+
+    <input id="entityUniverse" type="text" placeholder="Universe, e.g. The Mentalist" />
+
+    <input id="entityCategory" type="text" placeholder="Category, e.g. TV" />
+
+    <input
+      id="entityAliases"
+      type="text"
+      placeholder="Aliases, separated by commas"
+    />
+
+    <input
+      id="entityTags"
+      type="text"
+      placeholder="Tags, separated by commas"
+    />
+
+    <textarea
+      id="entityDescription"
+      rows="4"
+      placeholder="Description"
+    ></textarea>
+
+    <button id="saveKnowledgeButton">
+      SAVE TO KNOWLEDGE BASE
+    </button>
+  </div>
+
+  <div id="knowledgeList"></div>
+</section>
 <section class="memory-panel">
   <div class="memory-header">
     <span>MEMORY BANK</span>
