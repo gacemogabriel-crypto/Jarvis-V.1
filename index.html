@@ -131,7 +131,49 @@
 
         <button id="sendButton">SEND</button>
       </div>
+<section class="vision-panel">
+  <div class="vision-header">
+    <span>VISUAL ANALYSIS</span>
+    <span id="visionStatus">NO IMAGE SELECTED</span>
+  </div>
 
+  <div class="vision-content">
+    <input
+      id="imageInput"
+      type="file"
+      accept="image/*"
+      hidden
+    />
+
+    <button id="selectImageButton">
+      📷 SELECT IMAGE
+    </button>
+
+    <div
+      id="imagePreviewContainer"
+      class="image-preview-container hidden"
+    >
+      <img
+        id="imagePreview"
+        alt="Selected image preview"
+      />
+
+      <button id="removeImageButton">
+        REMOVE IMAGE
+      </button>
+    </div>
+
+    <textarea
+      id="visionPrompt"
+      placeholder="What should JARVIS examine? Example: Read this worksheet and explain question 4."
+      rows="3"
+    ></textarea>
+
+    <button id="analyzeImageButton" disabled>
+      ANALYZE IMAGE
+    </button>
+  </div>
+</section>
     </section>
 <section class="memory-panel">
   <div class="memory-header">
