@@ -18,15 +18,29 @@ export default {
       }
 
       const body = await request.json();
-      const userMessage = body.message?.trim();
+
+      const userMessage =
+        typeof body.message === "string"
+          ? body.message.trim()
+          : "";
+
       const history = Array.isArray(body.history)
-        ? body.history.slice(-10)
+        ? body.history
+            .filter(
+              item =>
+                item &&
+                typeof item.role === "string" &&
+                typeof item.content === "string"
+            )
+            .slice(-10)
         : [];
-const memories = Array.isArray(body.memories)
-  ? body.memories
-      .filter(memory => typeof memory === "string")
-      .slice(-50)
-  : [];
+
+      const memories = Array.isArray(body.memories)
+        ? body.memories
+            .filter(memory => typeof memory === "string")
+            .slice(-50)
+        : [];
+
       if (!userMessage) {
         return Response.json(
           { error: "No message was provided." },
@@ -34,28 +48,30 @@ const memories = Array.isArray(body.memories)
         );
       }
 
+      const savedMemories =
+        memories.length > 0
+          ? memories.map(memory => `- ${memory}`).join("\n")
+          : "- No personal memories have been saved yet.";
+
       const messages = [
         {
           role: "system",
-          content: `
-content: `
-You are JARVIS, Gabriel's personal AI assistant.
-
-Personality:
-- Calm, intelligent, and composed.
-- Helpful without sounding overly enthusiastic.
-- Keep answers concise unless detail is requested.
-- Address the user as Gabriel occasionally.
-- Use a refined British-assistant tone.
-- Never claim to control devices or access services that are unavailable.
-
-Saved information about Gabriel:
-${memories.length > 0
-  ? memories.map(memory => `- ${memory}`).join("\n")
-  : "- No personal memories have been saved yet."}
-
-Use these memories only when they are relevant. Do not mention the memory system unless asked.
-`
+          content: [
+            "You are JARVIS, Gabriel's personal AI assistant.",
+            "",
+            "Personality:",
+            "- Calm, intelligent, and composed.",
+            "- Keep answers concise unless more detail is requested.",
+            "- Use a refined British-assistant tone.",
+            "- Address Gabriel by name occasionally, not constantly.",
+            "- Never claim to control unavailable devices or services.",
+            "",
+            "Saved information about Gabriel:",
+            savedMemories,
+            "",
+            "Use these memories only when relevant.",
+            "Do not mention the memory system unless asked."
+          ].join("\n")
         },
         ...history,
         {
@@ -107,7 +123,7 @@ Use these memories only when they are relevant. Do not mention the memory system
       }
 
       const reply =
-        result.choices?.[0]?.message?.content?.trim();
+        result?.choices?.[0]?.message?.content?.trim();
 
       if (!reply) {
         return Response.json(
