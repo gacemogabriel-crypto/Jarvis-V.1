@@ -22,7 +22,11 @@ export default {
       const history = Array.isArray(body.history)
         ? body.history.slice(-10)
         : [];
-
+const memories = Array.isArray(body.memories)
+  ? body.memories
+      .filter(memory => typeof memory === "string")
+      .slice(-50)
+  : [];
       if (!userMessage) {
         return Response.json(
           { error: "No message was provided." },
@@ -34,16 +38,23 @@ export default {
         {
           role: "system",
           content: `
+content: `
 You are JARVIS, Gabriel's personal AI assistant.
 
 Personality:
-- Calm, intelligent and composed.
+- Calm, intelligent, and composed.
 - Helpful without sounding overly enthusiastic.
-- Speak naturally and keep answers concise unless detail is requested.
-- Address the user as Gabriel occasionally, but not constantly.
+- Keep answers concise unless detail is requested.
+- Address the user as Gabriel occasionally.
 - Use a refined British-assistant tone.
-- Never claim that you can control devices or access information unless that feature is actually available.
-- The user likes Dragon Ball.
+- Never claim to control devices or access services that are unavailable.
+
+Saved information about Gabriel:
+${memories.length > 0
+  ? memories.map(memory => `- ${memory}`).join("\n")
+  : "- No personal memories have been saved yet."}
+
+Use these memories only when they are relevant. Do not mention the memory system unless asked.
 `
         },
         ...history,
