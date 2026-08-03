@@ -7,7 +7,9 @@ const statusText = document.getElementById("statusText");
 const clock = document.getElementById("clock");
 const dateText = document.getElementById("date");
 const coreContainer = document.getElementById("coreContainer");
-
+const memoryList = document.getElementById("memoryList");
+const clearMemoriesButton =
+  document.getElementById("clearMemoriesButton");
 setTimeout(() => {
   bootScreen.classList.add("hidden");
 }, 3000);
@@ -67,7 +69,38 @@ function saveMemories() {
     JSON.stringify(jarvisMemories)
   );
 }
+function renderMemories() {
+  memoryList.innerHTML = "";
 
+  if (jarvisMemories.length === 0) {
+    memoryList.innerHTML =
+      '<p class="empty-memory">No saved memories yet.</p>';
+    return;
+  }
+
+  jarvisMemories.forEach((memory, index) => {
+    const item = document.createElement("div");
+    item.className = "memory-item";
+
+    const text = document.createElement("div");
+    text.className = "memory-text";
+    text.textContent = memory;
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "delete-memory";
+    deleteButton.textContent = "DELETE";
+
+    deleteButton.addEventListener("click", () => {
+      jarvisMemories.splice(index, 1);
+      saveMemories();
+      renderMemories();
+    });
+
+    item.appendChild(text);
+    item.appendChild(deleteButton);
+    memoryList.appendChild(item);
+  });
+}
 function rememberFact(fact) {
   const cleanFact = fact.trim();
 
@@ -91,7 +124,7 @@ function rememberFact(fact) {
   }
 
   saveMemories();
-
+renderMemories();
   return `Understood. I will remember that ${cleanFact}.`;
 }
 
@@ -109,7 +142,7 @@ function forgetFact(searchText) {
   );
 
   saveMemories();
-
+renderMemories();
   if (jarvisMemories.length === originalLength) {
     return "I could not find a matching memory.";
   }
@@ -417,3 +450,21 @@ talkButton.addEventListener("click", () => {
     startRecording();
   }
 });
+clearMemoriesButton.addEventListener("click", () => {
+  const confirmed = confirm(
+    "Delete every saved JARVIS memory?"
+  );
+
+  if (!confirmed) return;
+
+  jarvisMemories = [];
+  saveMemories();
+  renderMemories();
+
+  addMessage(
+    "JARVIS",
+    "All saved memories have been deleted."
+  );
+});
+
+rendermemories();
