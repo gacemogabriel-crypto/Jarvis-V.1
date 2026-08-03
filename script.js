@@ -57,7 +57,105 @@ function speak(message) {
 
 const conversationHistory = [];
 
+let jarvisMemories = JSON.parse(
+  localStorage.getItem("jarvisMemories") || "[]"
+);
+
+function saveMemories() {
+  localStorage.setItem(
+    "jarvisMemories",
+    JSON.stringify(jarvisMemories)
+  );
+}
+
+function rememberFact(fact) {
+  const cleanFact = fact.trim();
+
+  if (!cleanFact) {
+    return "I need something specific to remember.";
+  }
+
+  const alreadyExists = jarvisMemories.some(
+    memory =>
+      memory.toLowerCase() === cleanFact.toLowerCase()
+  );
+
+  if (alreadyExists) {
+    return "I already remember that.";
+  }
+
+  jarvisMemories.push(cleanFact);
+
+  if (jarvisMemories.length > 50) {
+    jarvisMemories.shift();
+  }
+
+  saveMemories();
+
+  return `Understood. I will remember that ${cleanFact}.`;
+}
+
+function forgetFact(searchText) {
+  const query = searchText.trim().toLowerCase();
+
+  if (!query) {
+    return "Tell me what you want me to forget.";
+  }
+
+  const originalLength = jarvisMemories.length;
+
+  jarvisMemories = jarvisMemories.filter(
+    memory => !memory.toLowerCase().includes(query)
+  );
+
+  saveMemories();
+
+  if (jarvisMemories.length === originalLength) {
+    return "I could not find a matching memory.";
+  }
+
+  return "That information has been removed from my memory.";
+}
+
+function listMemories() {
+  if (jarvisMemories.length === 0) {
+    return "I have not saved any personal memories yet.";
+  }
+
+  return `Here is what I remember: ${jarvisMemories.join("; ")}.`;
+}
+
 async function getJarvisResponse(command) {
+  const lowerCommand = command.toLowerCase().trim();
+
+  if (lowerCommand.startsWith("remember that ")) {
+    const fact = command.slice(14);
+    return rememberFact(fact);
+  }
+
+  if (lowerCommand.startsWith("remember ")) {
+    const fact = command.slice(9);
+    return rememberFact(fact);
+  }
+
+  if (lowerCommand.startsWith("forget that ")) {
+    const fact = command.slice(12);
+    return forgetFact(fact);
+  }
+
+  if (lowerCommand.startsWith("forget ")) {
+    const fact = command.slice(7);
+    return forgetFact(fact);
+  }
+
+  if (
+    lowerCommand.includes("what do you remember") ||
+    lowerCommand.includes("show my memories") ||
+    lowerCommand.includes("what do you know about me")
+  ) {
+    return listMemories();
+  }
+
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: {
@@ -65,7 +163,8 @@ async function getJarvisResponse(command) {
     },
     body: JSON.stringify({
       message: command,
-      history: conversationHistory
+      history: conversationHistory,
+      memories: jarvisMemories
     })
   });
 
