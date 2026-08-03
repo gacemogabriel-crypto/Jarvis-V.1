@@ -8,12 +8,10 @@ const clock = document.getElementById("clock");
 const dateText = document.getElementById("date");
 const coreContainer = document.getElementById("coreContainer");
 
-// Hide the startup screen
 setTimeout(() => {
   bootScreen.classList.add("hidden");
 }, 3000);
 
-// Update clock and date
 function updateTime() {
   const now = new Date();
 
@@ -32,7 +30,6 @@ function updateTime() {
 updateTime();
 setInterval(updateTime, 1000);
 
-// Add messages to the communication log
 function addMessage(speaker, message) {
   const messageElement = document.createElement("div");
   messageElement.className = "message";
@@ -46,24 +43,18 @@ function addMessage(speaker, message) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-// Make JARVIS speak
 function speak(message) {
-  if (!("speechSynthesis" in window)) {
-    return;
-  }
+  if (!("speechSynthesis" in window)) return;
 
   const speech = new SpeechSynthesisUtterance(message);
-
   speech.lang = "en-GB";
   speech.rate = 0.92;
   speech.pitch = 0.82;
-  speech.volume = 1;
 
   window.speechSynthesis.cancel();
   window.speechSynthesis.speak(speech);
 }
 
-// Temporary JARVIS responses
 function getJarvisResponse(command) {
   const text = command.toLowerCase();
 
@@ -95,31 +86,19 @@ function getJarvisResponse(command) {
     return "Dragon Ball detected. An excellent choice.";
   }
 
-  if (text.includes("who is tony stark")) {
-    return "Tony Stark is the creator of the original JARVIS system in the Marvel universe.";
-  }
-
   if (text.includes("thank")) {
     return "You are welcome.";
   }
 
-  if (text.includes("goodbye") || text.includes("bye")) {
-    return "Goodbye. I will remain available.";
-  }
-
-  return "My artificial intelligence connection has not been installed yet. For now, I can only answer basic commands.";
+  return "I understood your command. My full artificial intelligence system will be connected next.";
 }
 
-// Process typed or spoken commands
 function processCommand(command) {
   const cleanCommand = command.trim();
 
-  if (!cleanCommand) {
-    return;
-  }
+  if (!cleanCommand) return;
 
   addMessage("YOU", cleanCommand);
-
   statusText.textContent = "PROCESSING COMMAND";
   coreContainer.classList.add("active");
 
@@ -134,13 +113,11 @@ function processCommand(command) {
   }, 700);
 }
 
-// Send button
 sendButton.addEventListener("click", () => {
   processCommand(textInput.value);
   textInput.value = "";
 });
 
-// Press Enter to send
 textInput.addEventListener("keydown", event => {
   if (event.key === "Enter") {
     processCommand(textInput.value);
@@ -148,10 +125,9 @@ textInput.addEventListener("keydown", event => {
   }
 });
 
-// Voice recognition
-let mediaRecorder;
+let mediaRecorder = null;
 let audioChunks = [];
-let microphoneStream;
+let microphoneStream = null;
 let isRecording = false;
 
 function chooseRecordingType() {
@@ -191,14 +167,11 @@ async function startRecording() {
       });
 
     const mimeType = chooseRecordingType();
-
-    const recorderOptions = mimeType
-      ? { mimeType }
-      : undefined;
+    const options = mimeType ? { mimeType } : undefined;
 
     mediaRecorder = new MediaRecorder(
       microphoneStream,
-      recorderOptions
+      options
     );
 
     audioChunks = [];
@@ -210,11 +183,9 @@ async function startRecording() {
     };
 
     mediaRecorder.onstop = sendRecording;
-
     mediaRecorder.start();
 
     isRecording = true;
-
     statusText.textContent = "RECORDING";
     talkButton.textContent = "⏹ STOP RECORDING";
     coreContainer.classList.add("active");
@@ -225,8 +196,7 @@ async function startRecording() {
 
     addMessage(
       "JARVIS",
-      error.message ||
-        "I could not access the microphone."
+      error.message || "I could not access the microphone."
     );
   }
 }
@@ -266,14 +236,12 @@ async function sendRecording() {
       throw new Error("The recording was empty.");
     }
 
-    const fileExtension =
-      recordingType.includes("webm")
-        ? "webm"
-        : "m4a";
+    const extension =
+      recordingType.includes("webm") ? "webm" : "m4a";
 
     const audioFile = new File(
       [audioBlob],
-      `jarvis-recording.${fileExtension}`,
+      `jarvis-recording.${extension}`,
       { type: recordingType }
     );
 
@@ -296,9 +264,7 @@ async function sendRecording() {
     const transcript = result.text?.trim();
 
     if (!transcript) {
-      throw new Error(
-        "I could not detect any speech."
-      );
+      throw new Error("I could not detect any speech.");
     }
 
     textInput.value = transcript;
@@ -320,9 +286,7 @@ async function sendRecording() {
     talkButton.innerHTML =
       '<span class="microphone">🎙</span> ACTIVATE VOICE';
 
-    if (
-      statusText.textContent === "PROCESSING AUDIO"
-    ) {
+    if (statusText.textContent === "PROCESSING AUDIO") {
       statusText.textContent = "AWAITING COMMAND";
     }
   }
@@ -334,5 +298,4 @@ talkButton.addEventListener("click", () => {
   } else {
     startRecording();
   }
-});
 });
