@@ -1,10 +1,18 @@
-export const maxDuration = 45;
+export const maxDuration = 60;
+
+const VISION_MODEL = "qwen/qwen3.6-27b";
+const REASONING_MODEL = "openai/gpt-oss-20b";
 
 function jsonResponse(data, status = 200) {
   return Response.json(data, { status });
 }
 
-async function callGroq(messages, model, maxTokens = 700) {
+async function callGroq({
+  messages,
+  model,
+  maxTokens = 800,
+  temperature = 0.1
+}) {
   const response = await fetch(
     "https://api.groq.com/openai/v1/chat/completions",
     {
@@ -16,7 +24,7 @@ async function callGroq(messages, model, maxTokens = 700) {
       body: JSON.stringify({
         model,
         messages,
-        temperature: 0.1,
+        temperature,
         max_completion_tokens: maxTokens
       }),
       signal: AbortSignal.timeout(30000)
@@ -30,7 +38,9 @@ async function callGroq(messages, model, maxTokens = 700) {
   try {
     result = JSON.parse(responseText);
   } catch {
-    throw new Error("Groq returned an invalid response.");
+    throw new Error(
+      `Groq returned invalid JSON: ${responseText.slice(0, 180)}`
+    );
   }
 
   if (!response.ok) {
@@ -63,7 +73,7 @@ async function searchWeb(query) {
         query,
         topic: "general",
         search_depth: "advanced",
-        max_results: 6,
+        max_results: 5,
         include_answer: false,
         include_raw_content: false
       }),
@@ -78,20 +88,132 @@ async function searchWeb(query) {
   try {
     result = JSON.parse(responseText);
   } catch {
-    throw new Error("Tavily returned an invalid response.");
+    throw new Error(
+      `Tavily returned invalid JSON: ${responseText.slice(0, 180)}`
+    );
   }
 
   if (!response.ok) {
     throw new Error(
       result?.detail ||
       result?.message ||
-      `Web search failed with status ${response.status}.`
+      `Search failed with status ${response.status}.`
     );
   }
 
   return Array.isArray(result.results)
     ? result.results
     : [];
+}
+
+function extractSection(text, sectionName) {
+  const escapedName = sectionName.replace(
+    /[.*+?^${}()|[\]\\]/g,
+    "\\$&"
+  );
+
+  const expression = new RegExp(
+    `${escapedName}:\\s*([\\s\\S]*?)(?=\\n[A-Z_]+:|$)`,
+    "i"
+  );
+
+  return text.match(expression)?.[1]?.trim() || "";
+}
+
+function extractQueries(text) {
+  const querySection = extractSection(
+    text,
+    "SEARCH_QUERIES"
+  );
+
+  const lines = querySection
+    .split("\n")
+    .map(line =>
+      line
+        .replace(/^[-*•\d.)\s]+/, "")
+        .trim()
+    )
+    .filter(Boolean);
+
+  return [...new Set(lines)].slice(0, 5);
+}
+
+function normalizeUrl(url) {
+  try {
+    const parsed = new URL(url);
+
+    parsed.hash = "";
+
+    const removableParameters = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "ref"
+    ];
+
+    removableParameters.forEach(parameter => {
+      parsed.searchParams.delete(parameter);
+    });
+
+    return parsed.toString();
+  } catch {
+    return url || "";
+  }
+}
+
+function deduplicateResults(searchGroups) {
+  const seenUrls = new Set();
+  const combined = [];
+
+  searchGroups.forEach(group => {
+    group.results.forEach(result => {
+      const normalizedUrl = normalizeUrl(result.url);
+
+      if (!normalizedUrl || seenUrls.has(normalizedUrl)) {
+        return;
+      }
+
+      seenUrls.add(normalizedUrl);
+
+      combined.push({
+        query: group.query,
+        title: result.title || "Untitled",
+        url: normalizedUrl,
+        content: result.content || "No summary available.",
+        score:
+          typeof result.score === "number"
+            ? result.score
+            : null
+      });
+    });
+  });
+
+  return combined.slice(0, 20);
+}
+
+function formatEvidence(results) {
+  if (results.length === 0) {
+    return "No useful web results were found.";
+  }
+
+  return results
+    .map((result, index) => {
+      return [
+        `SOURCE ${index + 1}`,
+        `Search query: ${result.query}`,
+        `Title: ${result.title}`,
+        `URL: ${result.url}`,
+        `Summary: ${result.content}`,
+        result.score !== null
+          ? `Search relevance score: ${result.score}`
+          : ""
+      ]
+        .filter(Boolean)
+        .join("\n");
+    })
+    .join("\n\n");
 }
 
 export default {
@@ -106,14 +228,20 @@ export default {
     try {
       if (!process.env.GROQ_API_KEY) {
         return jsonResponse(
-          { error: "GROQ_API_KEY is missing in Vercel." },
+          {
+            error:
+              "GROQ_API_KEY is missing in Vercel."
+          },
           500
         );
       }
 
       if (!process.env.TAVILY_API_KEY) {
         return jsonResponse(
-          { error: "TAVILY_API_KEY is missing in Vercel." },
+          {
+            error:
+              "TAVILY_API_KEY is missing in Vercel."
+          },
           500
         );
       }
@@ -130,7 +258,9 @@ export default {
 
       const memories = Array.isArray(body.memories)
         ? body.memories
-            .filter(item => typeof item === "string")
+            .filter(
+              memory => typeof memory === "string"
+            )
             .slice(-30)
         : [];
 
@@ -139,32 +269,72 @@ export default {
         !image.startsWith("data:image/")
       ) {
         return jsonResponse(
-          { error: "No valid image was received." },
+          {
+            error:
+              "No valid image was received."
+          },
           400
         );
       }
 
       /*
-       * Stage 1:
-       * Describe the image and create a useful search query.
+       * STAGE 1
+       * Extract objective visual evidence and create
+       * five independent search queries.
        */
-      const visualAnalysis = await callGroq(
-        [
+
+      const visualAnalysis = await callGroq({
+        model: VISION_MODEL,
+        maxTokens: 900,
+        temperature: 0,
+        messages: [
           {
             role: "system",
             content: [
-              "You are the visual-analysis module of JARVIS.",
-              "Examine only visible evidence.",
-              "Do not confidently identify a logo, symbol, franchise, character, or object from vague similarity.",
-              "Your job is to produce a detailed visual description and a web-search query.",
+              "You are the visual evidence extraction module of JARVIS.",
               "",
-              "Return exactly this format:",
-              "DESCRIPTION: detailed visible features",
-              "INITIAL_GUESS: likely identity or UNKNOWN",
-              "CONFIDENCE: number from 0 to 100",
-              "SEARCH_QUERY: one precise web search query",
+              "Your task is not to identify the image immediately.",
+              "First extract only objective details that are visibly present.",
+              "Do not mention a franchise, television show, film, game, band, character, person, company, or logo unless visible text proves it.",
+              "Do not allow an early guess to influence every search query.",
               "",
-              "Mention colors, shapes, line arrangement, text, style, and unusual details."
+              "Pay attention to:",
+              "- exact colors",
+              "- number and shape of lines",
+              "- orientation",
+              "- symmetry",
+              "- facial or symbolic features",
+              "- brush, paint, graffiti, print, or digital style",
+              "- drips, breaks, curves, angles, borders, and spacing",
+              "- visible letters or words",
+              "- background and surrounding context",
+              "",
+              "Generate five meaningfully different search queries.",
+              "At least two queries must be purely descriptive.",
+              "At least one query should consider television or film.",
+              "At least one query should consider games, music, comics, or other media.",
+              "Do not repeat the same guessed identity in all five queries.",
+              "",
+              "Return exactly this structure:",
+              "",
+              "VISIBLE_FEATURES:",
+              "A detailed objective description.",
+              "",
+              "VISIBLE_TEXT:",
+              "Exact readable text, or NONE.",
+              "",
+              "OBJECT_CATEGORY:",
+              "A broad category such as symbol, logo, character, object, scene, document, or unknown.",
+              "",
+              "INITIAL_POSSIBILITIES:",
+              "Up to three cautious possibilities, or UNKNOWN.",
+              "",
+              "SEARCH_QUERIES:",
+              "1. First query",
+              "2. Second query",
+              "3. Third query",
+              "4. Fourth query",
+              "5. Fifth query"
             ].join("\n")
           },
           {
@@ -172,7 +342,12 @@ export default {
             content: [
               {
                 type: "text",
-                text: userPrompt
+                text: [
+                  `User request: ${userPrompt}`,
+                  "",
+                  "Analyze the image using only visible evidence.",
+                  "Do not confidently identify it at this stage."
+                ].join("\n")
               },
               {
                 type: "image_url",
@@ -182,39 +357,73 @@ export default {
               }
             ]
           }
-        ],
-        "qwen/qwen3.6-27b",
-        600
-      );
+        ]
+      });
 
-      const queryMatch = visualAnalysis.match(
-        /SEARCH_QUERY:\s*(.+)/i
-      );
+      let searchQueries =
+        extractQueries(visualAnalysis);
 
-      const searchQuery = queryMatch?.[1]?.trim()
-        || `${userPrompt} ${visualAnalysis.slice(0, 300)}`;
+      if (searchQueries.length < 3) {
+        const visibleFeatures =
+          extractSection(
+            visualAnalysis,
+            "VISIBLE_FEATURES"
+          ) || visualAnalysis.slice(0, 500);
+
+        searchQueries = [
+          `${visibleFeatures} symbol`,
+          `${visibleFeatures} television film symbol`,
+          `${visibleFeatures} logo graffiti`,
+          `${visibleFeatures} fictional symbol`,
+          `${userPrompt} ${visibleFeatures}`
+        ];
+      }
+
+      searchQueries = [
+        ...new Set(
+          searchQueries
+            .map(query => query.trim())
+            .filter(Boolean)
+        )
+      ].slice(0, 5);
 
       /*
-       * Stage 2:
-       * Search the web for possible matches.
+       * STAGE 2
+       * Run all searches independently.
        */
-      const searchResults = await searchWeb(searchQuery);
 
-      const searchEvidence = searchResults
-        .map((result, index) => {
-          return [
-            `RESULT ${index + 1}`,
-            `Title: ${result.title || "Untitled"}`,
-            `URL: ${result.url || "No URL"}`,
-            `Summary: ${result.content || "No summary"}`
-          ].join("\n");
-        })
-        .join("\n\n");
+      const settledSearches =
+        await Promise.allSettled(
+          searchQueries.map(async query => ({
+            query,
+            results: await searchWeb(query)
+          }))
+        );
+
+      const successfulSearches =
+        settledSearches
+          .filter(
+            result => result.status === "fulfilled"
+          )
+          .map(result => result.value);
+
+      if (successfulSearches.length === 0) {
+        throw new Error(
+          "All web searches failed."
+        );
+      }
+
+      const combinedResults =
+        deduplicateResults(successfulSearches);
+
+      const searchEvidence =
+        formatEvidence(combinedResults);
 
       /*
-       * Stage 3:
-       * Compare the image evidence with the web evidence.
+       * STAGE 3
+       * Compare visual evidence against all sources.
        */
+
       const memoryText =
         memories.length > 0
           ? memories
@@ -222,51 +431,86 @@ export default {
               .join("\n")
           : "- No relevant saved memories.";
 
-      const finalReply = await callGroq(
-        [
+      const finalReply = await callGroq({
+        model: REASONING_MODEL,
+        maxTokens: 1100,
+        temperature: 0,
+        messages: [
           {
             role: "system",
             content: [
-              "You are JARVIS, Gabriel's personal AI assistant.",
-              "Identify visual material by comparing visual evidence with web-search evidence.",
-              "Do not accept a search result merely because it shares a color or general style.",
-              "Compare exact shapes, layout, markings, text, and context.",
-              "If the evidence is insufficient, say that clearly.",
-              "Do not invent certainty.",
+              "You are the verification module of JARVIS.",
               "",
-              "Give the answer in this format:",
-              "Identification: ...",
-              "Reasoning: ...",
-              "Confidence: ...%",
-              "Possible alternatives: ...",
+              "Your job is to identify an image only when the visual evidence and web evidence support the same conclusion.",
               "",
-              "Keep the answer fairly concise."
+              "Important rules:",
+              "- Treat the initial visual possibilities as unverified hypotheses.",
+              "- Never select an answer merely because one search result mentions it.",
+              "- Shared color, horror style, graffiti style, or a general smile shape is not enough.",
+              "- Compare exact structure, line placement, proportions, drips, text, context, and distinctive marks.",
+              "- Prefer conclusions supported by several independent sources or clearly matching descriptions.",
+              "- Search-result relevance scores are not proof of visual identity.",
+              "- Ignore results that only match broad keywords.",
+              "- If evidence conflicts, lower confidence.",
+              "- If no option has strong support, say the image could not be identified reliably.",
+              "",
+              "Confidence rules:",
+              "- 90–100%: distinctive match supported by multiple sources.",
+              "- 70–89%: strong match with minor uncertainty.",
+              "- 50–69%: plausible but not verified.",
+              "- Below 50%: do not give a definite identification.",
+              "",
+              "Return exactly this format:",
+              "",
+              "Visible details:",
+              "...",
+              "",
+              "Most likely identification:",
+              "... or Unable to identify reliably",
+              "",
+              "Confidence:",
+              "...%",
+              "",
+              "Evidence:",
+              "...",
+              "",
+              "Possible alternatives:",
+              "...",
+              "",
+              "Verification note:",
+              "State whether the conclusion was verified, partially supported, or unverified."
             ].join("\n")
           },
           {
             role: "user",
             content: [
-              `User request:\n${userPrompt}`,
+              `USER REQUEST:\n${userPrompt}`,
               "",
-              `Visual analysis:\n${visualAnalysis}`,
+              `OBJECTIVE VISUAL ANALYSIS:\n${visualAnalysis}`,
               "",
-              `Web evidence:\n${searchEvidence || "No useful search results were found."}`,
+              `SEARCH QUERIES USED:\n${searchQueries
+                .map(
+                  (query, index) =>
+                    `${index + 1}. ${query}`
+                )
+                .join("\n")}`,
               "",
-              `Saved information about Gabriel:\n${memoryText}`
+              `WEB EVIDENCE:\n${searchEvidence}`,
+              "",
+              `SAVED USER INFORMATION:\n${memoryText}`
             ].join("\n")
           }
-        ],
-        "openai/gpt-oss-20b",
-        800
-      );
+        ]
+      });
 
       return jsonResponse({
         reply: finalReply,
         visualAnalysis,
-        searchQuery,
-        sources: searchResults.map(result => ({
-          title: result.title || "",
-          url: result.url || ""
+        searchQueries,
+        sources: combinedResults.map(result => ({
+          title: result.title,
+          url: result.url,
+          query: result.query
         }))
       });
     } catch (error) {
@@ -276,7 +520,10 @@ export default {
           : error?.message ||
             "Unknown identification error.";
 
-      return jsonResponse({ error: message }, 500);
+      return jsonResponse(
+        { error: message },
+        500
+      );
     }
   }
 };
