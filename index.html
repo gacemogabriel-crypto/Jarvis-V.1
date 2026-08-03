@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <meta name="theme-color" content="#020a12" />
+
+  <title>J.A.R.V.I.S.</title>
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <div class="boot-screen" id="bootScreen">
+    <div class="boot-logo">J.A.R.V.I.S.</div>
+    <div class="boot-line">INITIALIZING SYSTEMS</div>
+
+    <div class="loading-bar">
+      <div class="loading-progress"></div>
+    </div>
+  </div>
+
+  <main class="interface" id="interface">
+
+    <header class="top-bar">
+      <div>
+        <span class="small-label">STARK INTERFACE</span>
+        <h1>J.A.R.V.I.S.</h1>
+      </div>
+
+      <div class="online-indicator">
+        <span class="online-dot"></span>
+        ONLINE
+      </div>
+    </header>
+
+    <section class="dashboard">
+
+      <aside class="panel left-panel">
+        <h2>SYSTEM STATUS</h2>
+
+        <div class="system-row">
+          <span>CORE</span>
+          <span class="status-good">ACTIVE</span>
+        </div>
+
+        <div class="system-row">
+          <span>VOICE</span>
+          <span class="status-good">READY</span>
+        </div>
+
+        <div class="system-row">
+          <span>NETWORK</span>
+          <span class="status-good">CONNECTED</span>
+        </div>
+
+        <div class="system-row">
+          <span>MEMORY</span>
+          <span class="status-warning">LOCAL</span>
+        </div>
+      </aside>
+
+      <section class="center-panel">
+
+        <div class="core-container" id="coreContainer">
+
+          <div class="outer-ring"></div>
+          <div class="middle-ring"></div>
+          <div class="inner-ring"></div>
+
+          <div class="scan-line"></div>
+
+          <div class="energy-core">
+            <div class="core-light"></div>
+          </div>
+
+        </div>
+
+        <div id="statusText">AWAITING COMMAND</div>
+
+        <button id="talkButton">
+          <span class="microphone">🎙</span>
+          ACTIVATE VOICE
+        </button>
+
+      </section>
+
+      <aside class="panel right-panel">
+        <h2>LIVE DATA</h2>
+
+        <div class="data-block">
+          <span class="data-label">TIME</span>
+          <span id="clock">--:--</span>
+        </div>
+
+        <div class="data-block">
+          <span class="data-label">DATE</span>
+          <span id="date">---</span>
+        </div>
+
+        <div class="data-block">
+          <span class="data-label">MODE</span>
+          <span>ASSISTANT</span>
+        </div>
+      </aside>
+
+    </section>
+
+    <section class="conversation-panel">
+
+      <div class="conversation-header">
+        COMMUNICATION LOG
+      </div>
+
+      <div id="chat">
+        <div class="message jarvis-message">
+          <span class="speaker">JARVIS</span>
+          Good afternoon. All systems are operational.
+        </div>
+      </div>
+
+      <div class="text-controls">
+        <input
+          id="textInput"
+          type="text"
+          placeholder="Enter a command..."
+          autocomplete="off"
+        />
+
+        <button id="sendButton">SEND</button>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
