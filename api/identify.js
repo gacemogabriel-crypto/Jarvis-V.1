@@ -1,8 +1,102 @@
+import { createClient } from "@supabase/supabase-js";
 export const maxDuration = 60;
 
 const VISION_MODEL = "qwen/qwen3.6-27b";
 const REASONING_MODEL = "openai/gpt-oss-20b";
+function createSupabaseAdmin() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseSecretKey =
+    process.env.SUPABASE_SECRET_KEY;
 
+  if (!supabaseUrl || !supabaseSecretKey) {
+    throw new Error(
+      "Supabase environment variables are missing."
+    );
+  }
+
+  return createClient(
+    supabaseUrl,
+    supabaseSecretKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    }
+  );
+}
+async function searchKnowledgeBase(keywords) {
+  const supabase = createSupabaseAdmin();
+
+  const cleanedKeywords = [
+    ...new Set(
+      keywords
+        .filter(keyword => typeof keyword === "string")
+        .map(keyword => keyword.trim().toLowerCase())
+        .filter(Boolean)
+    )
+  ].slice(0, 12);
+
+  if (cleanedKeywords.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("knowledge_entities")
+    .select(
+      "id, name, entity_type, universe, category, description, aliases, tags, visual_keywords"
+    )
+    .limit(100);
+
+  if (error) {
+    throw new Error(
+      `Knowledge search failed: ${error.message}`
+    );
+  }
+
+  const scored = (data || []).map(entity => {
+    const searchableText = [
+      entity.name,
+      entity.entity_type,
+      entity.universe,
+      entity.category,
+      entity.description,
+      ...(Array.isArray(entity.aliases)
+        ? entity.aliases
+        : []),
+      ...(Array.isArray(entity.tags)
+        ? entity.tags
+        : [])
+      (Array.isArray(entity.visual_keywords)
+  ? entity.visual_keywords
+  : [])
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    let score = 0;
+    const matchedKeywords = [];
+
+    for (const keyword of cleanedKeywords) {
+      if (searchableText.includes(keyword)) {
+        score += 1;
+        matchedKeywords.push(keyword);
+      }
+    }
+
+    return {
+      ...entity,
+      score,
+      matchedKeywords
+    };
+  });
+
+  return scored
+    .filter(entity => entity.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+}
 function jsonResponse(data, status = 200) {
   return Response.json(data, { status });
 }
@@ -342,7 +436,16 @@ export default {
       )
         ? extraction.visibleFeatures
         : [];
+const knowledgeKeywords = [
+  ...visibleFeatures,
+  ...(Array.isArray(extraction.visibleText)
+    ? extraction.visibleText
+    : []),
+  extraction.category
+].filter(Boolean);
 
+const knowledgeMatches =
+  await searchKnowledgeBase(knowledgeKeywords);
       let candidates = uniqueStrings(
         Array.isArray(extraction.candidates)
           ? extraction.candidates
@@ -359,7 +462,37 @@ export default {
           : [],
         5
       );
-
+const knowledgeEvidence =
+  knowledgeMatches.length > 0
+    ? knowledgeMatches
+        .map((entity, index) => {
+          return [
+            `KNOWLEDGE MATCH ${index + 1}`,
+            `Name: ${entity.name}`,
+            `Type: ${entity.entity_type || "Unknown"}`,
+            `Universe: ${entity.universe || "Unknown"}`,
+            `Category: ${entity.category || "Unknown"}`,
+            `Description: ${
+              entity.description || "No description"
+            }`,
+            `Aliases: ${
+              Array.isArray(entity.aliases)
+                ? entity.aliases.join(", ")
+                : "None"
+            }`,
+            `Tags: ${
+              Array.isArray(entity.tags)
+                ? entity.tags.join(", ")
+                : "None"
+            }`,
+            `Matched visual keywords: ${
+              entity.matchedKeywords.join(", ")
+            }`,
+            `Match score: ${entity.score}`
+          ].join("\n");
+        })
+        .join("\n\n")
+    : "No matching entries were found in JARVIS's knowledge base.";
       /*
        * STAGE 2
        * Broad searches based mainly on visible details.
@@ -481,7 +614,11 @@ export default {
             role: "system",
             content: [
               "You are JARVIS's strict visual identity verifier.",
-              "",
+              "","Treat JARVIS's knowledge base as high-confidence evidence.",
+"If a knowledge entry matches multiple visible features, prefer it over general visual guesses.",
+"Use the knowledge base to identify characters, symbols, objects, logos, and locations whenever there is strong evidence.",
+"If the knowledge base contains a convincing match, explicitly mention it in your answer.",
+"Only reject a knowledge entry if the visible evidence clearly contradicts it.",
               "Evaluate every candidate separately.",
               "A candidate must be rejected when sources do not show or describe the same design.",
               "",
@@ -543,7 +680,7 @@ export default {
                 Array.isArray(extraction.visibleText)
                   ? extraction.visibleText.join("\n")
                   : "None"
-              }`,
+              }`,`JARVIS KNOWLEDGE BASE MATCHES:\n${knowledgeEvidence}`,
               "",
               `CANDIDATES TO VERIFY:\n${candidates.join(
                 "\n"

@@ -158,6 +158,7 @@ export function initializeKnowledgePanel() {
           category: entityCategory.value.trim(),
           aliases: splitCommaList(entityAliases.value),
           tags: splitCommaList(entityTags.value),
+          visualkeywords:splitCommaList(entityVisualKeywords.value),
           description: entityDescription.value.trim(),
           source: "user"
         })
