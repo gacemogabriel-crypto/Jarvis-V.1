@@ -44,40 +44,16 @@ export default {
           },
           body: JSON.stringify({
             model: "qwen/qwen3.6-27b",
+            reasoning_effort: "none",
             response_format: {
   type: "json_object"
 },
-            temperature: 0.1,
-            max_completion_tokens: 900,
+            temperature: 0.2,
+            max_completion_tokens: 1200,
             messages: [
               {
                 role: "system",
-                content: [
-                  "You are the knowledge-entry generator for JARVIS.",
-                  "Analyze the image carefully.",
-                  "Return valid JSON only.",
-                  "Do not include markdown fences.",
-                  "If you are unsure, leave fields blank instead of guessing.",
-                  "",
-                  "Return exactly this structure:",
-                  "{",
-                  '  "name": "",',
-                  '  "entityType": "",',
-                  '  "universe": "",',
-                  '  "category": "",',
-                  '  "aliases": [],',
-                  '  "tags": [],',
-                  '  "visualKeywords": [],',
-                  '  "description": ""',
-                  "}",
-                  "",
-                  "Rules:",
-                  "- visualKeywords must describe appearance only.",
-                  "- tags must describe identity, lore, context, franchise, or function.",
-                  "- aliases must contain alternate names only.",
-                  "- description should be concise but useful.",
-                  "- If the exact identity is uncertain, avoid pretending certainty."
-                ].join("\n")
+content: "Return only JSON.",
               },
               {
                 role: "user",
