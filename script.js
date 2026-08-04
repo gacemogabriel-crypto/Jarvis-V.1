@@ -147,10 +147,7 @@ function renderMemories() {
 
 
 
-  const alreadyExists = jarvisMemories.some(
-    memory =>
-      memory.toLowerCase() === cleanFact.toLowerCase()
-  );
+
 
 
   jarvisMemories.push(cleanFact);
