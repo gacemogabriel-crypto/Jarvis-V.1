@@ -6,7 +6,8 @@ function splitCommaList(value) {
 }
 
 export function initializeKnowledgePanel() {
-  const entityName = document.getElementById("entityName");
+  let selectedKnowledgeImage = "";
+    const entityName = document.getElementById("entityName");
   const entityType = document.getElementById("entityType");
   const entityUniverse =
     document.getElementById("entityUniverse");
@@ -26,7 +27,23 @@ export function initializeKnowledgePanel() {
     document.getElementById("knowledgeList");
   const knowledgeStatus =
     document.getElementById("knowledgeStatus");
+const knowledgeImageInput =
+  document.getElementById("knowledgeImageInput");
 
+const selectKnowledgeImageButton =
+  document.getElementById("selectKnowledgeImageButton");
+
+const knowledgeImagePreviewContainer =
+  document.getElementById("knowledgeImagePreviewContainer");
+
+const knowledgeImagePreview =
+  document.getElementById("knowledgeImagePreview");
+
+const analyzeKnowledgeImageButton =
+  document.getElementById("analyzeKnowledgeImageButton");
+
+const removeKnowledgeImageButton =
+  document.getElementById("removeKnowledgeImageButton");
   if (
     !entityName ||
     !saveKnowledgeButton ||
@@ -36,7 +53,150 @@ export function initializeKnowledgePanel() {
     console.warn("Knowledge panel elements were not found.");
     return;
   }
+function compressKnowledgeImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
+    reader.onerror = () => {
+      reject(new Error("The image could not be read."));
+    };
+
+    reader.onload = () => {
+      const image = new Image();
+
+      image.onerror = () => {
+        reject(new Error("The selected file is not a valid image."));
+      };
+
+      image.onload = () => {
+        const maximumSize = 1600;
+
+        let width = image.width;
+        let height = image.height;
+
+        if (width > maximumSize || height > maximumSize) {
+          const scale = Math.min(
+            maximumSize / width,
+            maximumSize / height
+          );
+
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d");
+
+        context.drawImage(image, 0, 0, width, height);
+
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+
+      image.src = reader.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+selectKnowledgeImageButton.addEventListener("click", () => {
+  knowledgeImageInput.click();
+});
+
+knowledgeImageInput.addEventListener("change", async event => {
+  const file = event.target.files?.[0];
+
+  if (!file) return;
+
+  knowledgeStatus.textContent = "PREPARING IMAGE";
+
+  try {
+    selectedKnowledgeImage =
+      await compressKnowledgeImage(file);
+
+    knowledgeImagePreview.src = selectedKnowledgeImage;
+    knowledgeImagePreviewContainer.classList.remove("hidden");
+
+    knowledgeStatus.textContent = "IMAGE READY";
+  } catch (error) {
+    console.error(error);
+    knowledgeStatus.textContent = "IMAGE ERROR";
+  }
+});
+
+removeKnowledgeImageButton.addEventListener("click", () => {
+  selectedKnowledgeImage = "";
+  knowledgeImageInput.value = "";
+  knowledgeImagePreview.src = "";
+
+  knowledgeImagePreviewContainer.classList.add("hidden");
+  knowledgeStatus.textContent = "READY";
+});
+
+analyzeKnowledgeImageButton.addEventListener(
+  "click",
+  async () => {
+    if (!selectedKnowledgeImage) {
+      knowledgeStatus.textContent = "SELECT IMAGE";
+      return;
+    }
+
+    knowledgeStatus.textContent = "ANALYZING";
+    analyzeKnowledgeImageButton.disabled = true;
+
+    try {
+      const response = await fetch(
+        "/api/knowledge-autofill",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            image: selectedKnowledgeImage
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "Could not analyze the image."
+        );
+      }
+
+      const entry = result.entry || {};
+
+      entityName.value = entry.name || "";
+      entityType.value = entry.entityType || "";
+      entityUniverse.value = entry.universe || "";
+      entityCategory.value = entry.category || "";
+      entityAliases.value = Array.isArray(entry.aliases)
+        ? entry.aliases.join(", ")
+        : "";
+      entityTags.value = Array.isArray(entry.tags)
+        ? entry.tags.join(", ")
+        : "";
+      entityVisualKeywords.value =
+        Array.isArray(entry.visualKeywords)
+          ? entry.visualKeywords.join(", ")
+          : "";
+      entityDescription.value =
+        entry.description || "";
+
+      knowledgeStatus.textContent = "DRAFT READY";
+    } catch (error) {
+      console.error(error);
+      knowledgeStatus.textContent = "AUTO-FILL ERROR";
+    } finally {
+      analyzeKnowledgeImageButton.disabled = false;
+    }
+  }
+);
   async function loadKnowledge() {
     knowledgeStatus.textContent = "LOADING";
 

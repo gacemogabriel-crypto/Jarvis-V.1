@@ -202,6 +202,43 @@
       placeholder="Tags, separated by commas"
     />
     <input
+  id="knowledgeImageInput"
+  type="file"
+  accept="image/*"
+  hidden
+/>
+
+<button
+  id="selectKnowledgeImageButton"
+  type="button"
+>
+  SELECT REFERENCE IMAGE
+</button>
+
+<div
+  id="knowledgeImagePreviewContainer"
+  class="knowledge-image-preview hidden"
+>
+  <img
+    id="knowledgeImagePreview"
+    alt="Knowledge reference preview"
+  />
+
+  <button
+    id="analyzeKnowledgeImageButton"
+    type="button"
+  >
+    AUTO-FILL FROM IMAGE
+  </button>
+
+  <button
+    id="removeKnowledgeImageButton"
+    type="button"
+  >
+    REMOVE IMAGE
+  </button>
+</div>
+    <input
   id="entityVisualKeywords"
   type="text"
   placeholder="Visual keywords, separated by commas"

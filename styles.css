@@ -650,4 +650,29 @@ button {
 .knowledge-meta {
   font-size: 12px;
   opacity: 0.7;
+}#selectKnowledgeImageButton,
+#analyzeKnowledgeImageButton,
+#removeKnowledgeImageButton {
+  padding: 12px;
+  border: 1px solid rgba(92, 220, 255, 0.35);
+  background: rgba(0, 20, 40, 0.45);
+  color: white;
+  cursor: pointer;
+}
+
+.knowledge-image-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.knowledge-image-preview img {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border: 1px solid rgba(92, 220, 255, 0.2);
+}
+
+.knowledge-image-preview.hidden {
+  display: none;
 }
