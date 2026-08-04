@@ -295,6 +295,14 @@ analyzeKnowledgeImageButton.addEventListener(
 
   saveKnowledgeButton.addEventListener("click", async () => {
     const name = entityName.value.trim();
+    const existingResponse = await fetch("/api/knowledge");
+const existingResult = await existingResponse.json();
+
+const duplicate = (existingResult.entities || []).find(
+  entity =>
+    entity.name?.trim().toLowerCase() ===
+    name.toLowerCase()
+);
 
     if (!name) {
       knowledgeStatus.textContent = "NAME REQUIRED";
