@@ -15,6 +15,8 @@ export function initializeKnowledgePanel() {
   const entityAliases =
     document.getElementById("entityAliases");
   const entityTags = document.getElementById("entityTags");
+ const entityVisualKeywords =
+  document.getElementById("entityVisualKeywords");
   const entityDescription =
     document.getElementById("entityDescription");
 
@@ -178,6 +180,7 @@ export function initializeKnowledgePanel() {
       entityCategory.value = "";
       entityAliases.value = "";
       entityTags.value = "";
+      entityVisualKeywords.value = "";
       entityDescription.value = "";
 
       knowledgeStatus.textContent = "SAVED";
