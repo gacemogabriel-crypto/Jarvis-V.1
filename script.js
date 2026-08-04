@@ -107,6 +107,8 @@ function speak(message) {
 
 
 function renderMemories() {
+  const jarvisMemories = getMemories();
+
   memoryList.innerHTML = "";
 
   if (jarvisMemories.length === 0) {
@@ -131,8 +133,7 @@ function renderMemories() {
     deleteButton.textContent = "DELETE";
 
     deleteButton.addEventListener("click", () => {
-      jarvisMemories.splice(index, 1);
-      saveMemories();
+      deleteMemory(index);
       renderMemories();
     });
 
@@ -141,6 +142,8 @@ function renderMemories() {
     memoryList.appendChild(item);
   });
 }
+
+  
 
 
 
