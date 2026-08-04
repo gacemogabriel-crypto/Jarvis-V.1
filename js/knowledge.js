@@ -139,7 +139,6 @@ removeKnowledgeImageButton.addEventListener("click", () => {
 analyzeKnowledgeImageButton.addEventListener(
   "click",
   async () => {
-    alert("AUTO FILL CLICKED");
     if (!selectedKnowledgeImage) {
       knowledgeStatus.textContent = "SELECT IMAGE";
       return;
@@ -161,9 +160,7 @@ analyzeKnowledgeImageButton.addEventListener(
           })
         }
       );
-alert("Fetch finished");
       const result = await response.json();
-alert(JSON.stringify(result));
       if (!response.ok) {
         throw new Error(
           result.error || "Could not analyze the image."
