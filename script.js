@@ -149,9 +149,6 @@ function renderMemories() {
       memory.toLowerCase() === cleanFact.toLowerCase()
   );
 
-  if (alreadyExists) {
-    return "I already remember that.";
-  }
 
   jarvisMemories.push(cleanFact);
 
@@ -162,7 +159,6 @@ function renderMemories() {
   saveMemories();
   renderMemories();
 
-  return `Understood. I will remember that ${cleanFact}.`;
 
 
 
@@ -177,14 +173,14 @@ function renderMemories() {
   renderMemories();
 
   if (jarvisMemories.length === originalLength) {
-    return "I could not find a matching memory.";
+
   }
 
-  return "That information has been removed from my memory.";
+
 
 /* MEMORY */
 
-function renderMemories() {
+
   const jarvisMemories = getMemories();
 
   memoryList.innerHTML = "";
@@ -195,7 +191,7 @@ function renderMemories() {
     emptyText.textContent = "No saved memories yet.";
 
     memoryList.appendChild(emptyText);
-    return;
+    
   }
 
   jarvisMemories.forEach((memory, index) => {
@@ -219,7 +215,7 @@ function renderMemories() {
     item.appendChild(deleteButton);
     memoryList.appendChild(item);
   });
-}
+
 
 /* AI CHAT */
 
