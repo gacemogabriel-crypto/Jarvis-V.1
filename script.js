@@ -122,7 +122,7 @@ function speak(message) {
 
 
 
-  saveMemories();
+  renderMemories();();
   renderMemories();
 
 
@@ -133,7 +133,7 @@ function speak(message) {
     memory => !memory.toLowerCase().includes(query)
 
 
-  saveMemories();
+  renderMemories();();
   renderMemories();
 
 
@@ -609,7 +609,7 @@ clearMemoriesButton.addEventListener("click", () => {
   if (!confirmed) return;
 
   clearMemories();
-  saveMemories();
+  renderMemories();();
   renderMemories();
 
   addMessage(
