@@ -6,6 +6,9 @@ import {
   deleteMemory,
   clearMemories
 } from "./js/memory.js";
+import {
+  initializeKnowledgePanel
+} from "./js/knowledge.js";
 const bootScreen = document.getElementById("bootScreen");
 const talkButton = document.getElementById("talkButton");
 const sendButton = document.getElementById("sendButton");
@@ -616,3 +619,4 @@ clearMemoriesButton.addEventListener("click", () => {
 });
 
 renderMemories();
+initializeKnowledgePanel();
