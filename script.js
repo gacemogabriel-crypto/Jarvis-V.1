@@ -106,42 +106,11 @@ function speak(message) {
 /* MEMORY */
 
 
-function renderMemories() {
-  const jarvisMemories = getMemories();
 
   memoryList.innerHTML = "";
 
-  if (jarvisMemories.length === 0) {
-    const emptyText = document.createElement("p");
-    emptyText.className = "empty-memory";
-    emptyText.textContent = "No saved memories yet.";
 
-    memoryList.appendChild(emptyText);
-    return;
-  }
 
-  jarvisMemories.forEach((memory, index) => {
-    const item = document.createElement("div");
-    item.className = "memory-item";
-
-    const text = document.createElement("div");
-    text.className = "memory-text";
-    text.textContent = memory;
-
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "delete-memory";
-    deleteButton.textContent = "DELETE";
-
-    deleteButton.addEventListener("click", () => {
-      deleteMemory(index);
-      renderMemories();
-    });
-
-    item.appendChild(text);
-    item.appendChild(deleteButton);
-    memoryList.appendChild(item);
-  });
-}
 
   
 
@@ -150,11 +119,8 @@ function renderMemories() {
 
 
 
-  jarvisMemories.push(cleanFact);
 
-  if (jarvisMemories.length > 50) {
-    jarvisMemories.shift();
-  }
+
 
   saveMemories();
   renderMemories();
@@ -163,58 +129,26 @@ function renderMemories() {
 
 
 
-  const originalLength = jarvisMemories.length;
 
-  jarvisMemories = jarvisMemories.filter(
     memory => !memory.toLowerCase().includes(query)
-  );
+
 
   saveMemories();
   renderMemories();
 
-  if (jarvisMemories.length === originalLength) {
 
-  }
+
 
 
 
 /* MEMORY */
 
 
-  const jarvisMemories = getMemories();
+
 
   memoryList.innerHTML = "";
 
-  if (jarvisMemories.length === 0) {
-    const emptyText = document.createElement("p");
-    emptyText.className = "empty-memory";
-    emptyText.textContent = "No saved memories yet.";
 
-    memoryList.appendChild(emptyText);
-    
-  }
-
-  jarvisMemories.forEach((memory, index) => {
-    const item = document.createElement("div");
-    item.className = "memory-item";
-
-    const text = document.createElement("div");
-    text.className = "memory-text";
-    text.textContent = memory;
-
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "delete-memory";
-    deleteButton.textContent = "DELETE";
-
-    deleteButton.addEventListener("click", () => {
-      deleteMemory(index);
-      renderMemories();
-    });
-
-    item.appendChild(text);
-    item.appendChild(deleteButton);
-    memoryList.appendChild(item);
-  });
 
 
 /* AI CHAT */
@@ -674,7 +608,7 @@ clearMemoriesButton.addEventListener("click", () => {
 
   if (!confirmed) return;
 
-  jarvisMemories = [];
+  clearMemories();
   saveMemories();
   renderMemories();
 
