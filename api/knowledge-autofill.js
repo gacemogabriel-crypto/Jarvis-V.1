@@ -53,7 +53,7 @@ export default {
             messages: [
               {
                 role: "system",
-content: "Return only JSON.",
+content: 'Return JSON using only these keys: name, entityType, universe, category, aliases, tags, visualKeywords, description, aliases, tags, and visualKeywords must be arrays. Do not create. nested objects.', 
               },
               {
                 role: "user",
