@@ -44,6 +44,9 @@ export default {
           },
           body: JSON.stringify({
             model: "qwen/qwen3.6-27b",
+            response_format: {
+  type: "json_object"
+},
             temperature: 0.1,
             max_completion_tokens: 900,
             messages: [
