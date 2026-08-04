@@ -139,6 +139,7 @@ removeKnowledgeImageButton.addEventListener("click", () => {
 analyzeKnowledgeImageButton.addEventListener(
   "click",
   async () => {
+    console.log("AUTO FILL CLICKED");
     if (!selectedKnowledgeImage) {
       knowledgeStatus.textContent = "SELECT IMAGE";
       return;
