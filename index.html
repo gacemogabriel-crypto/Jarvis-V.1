@@ -226,7 +226,53 @@
   </div>
 </section>
   </main>
+<script>
+  window.addEventListener("error", event => {
+    const box = document.createElement("pre");
 
+    box.style.position = "fixed";
+    box.style.left = "10px";
+    box.style.right = "10px";
+    box.style.bottom = "10px";
+    box.style.zIndex = "99999";
+    box.style.padding = "15px";
+    box.style.background = "#220000";
+    box.style.color = "#ff9999";
+    box.style.whiteSpace = "pre-wrap";
+
+    box.textContent =
+      "JAVASCRIPT ERROR:\n" +
+      event.message +
+      "\nFile: " +
+      event.filename +
+      "\nLine: " +
+      event.lineno;
+
+    document.body.appendChild(box);
+  });
+
+  window.addEventListener("unhandledrejection", event => {
+    const box = document.createElement("pre");
+
+    box.style.position = "fixed";
+    box.style.left = "10px";
+    box.style.right = "10px";
+    box.style.bottom = "10px";
+    box.style.zIndex = "99999";
+    box.style.padding = "15px";
+    box.style.background = "#220000";
+    box.style.color = "#ff9999";
+    box.style.whiteSpace = "pre-wrap";
+
+    box.textContent =
+      "PROMISE ERROR:\n" +
+      (event.reason?.stack ||
+        event.reason?.message ||
+        String(event.reason));
+
+    document.body.appendChild(box);
+  });
+</script>
   <script type="module" src="script.js"></script>
 
 </body>
