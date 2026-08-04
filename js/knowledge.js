@@ -297,13 +297,26 @@ analyzeKnowledgeImageButton.addEventListener(
     const name = entityName.value.trim();
     const existingResponse = await fetch("/api/knowledge");
 const existingResult = await existingResponse.json();
-alert(JSON.stringify(existingResult));
-const duplicate = (existingResult.entities || []).find(
-  entity =>
-    entity.name?.trim().toLowerCase() ===
-    name.toLowerCase()
-);
 
+const normalizedName = name.trim().toLowerCase();
+
+const duplicate = (existingResult.entities || []).find(entity => {
+  const existingName = (entity.name || "")
+    .trim()
+    .toLowerCase();
+
+  return existingName === normalizedName;
+});
+if (duplicate) {
+  const shouldContinue = confirm(
+    `"${duplicate.name}" already exists. Save another copy anyway?`
+  );
+
+  if (!shouldContinue) {
+    knowledgeStatus.textContent = "DUPLICATE CANCELLED";
+    return;
+  }
+}
     if (!name) {
       knowledgeStatus.textContent = "NAME REQUIRED";
       entityName.focus();
