@@ -53,7 +53,7 @@ export default {
             messages: [
               {
                 role: "system",
-content: 'Return JSON with two top-level keys: entry and confiendence. entry must contain name, entityType, universe, category, aliases, tags, visualKeywords, description. confidence must contain a number from 0 to 100 for each matching entry field. use arrays for aliases, tags and visualKeywords. Do not use nested objects inside entry.'
+content: 'Return JSON only. Keys: name, entityType, universe, category, aliases, tags, visualKeywords, description. aliases, tags and visualKeywords are arrays. Do not create nested objects.',
               },
               {
                 role: "user",
