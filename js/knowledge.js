@@ -161,9 +161,9 @@ analyzeKnowledgeImageButton.addEventListener(
           })
         }
       );
-
+alert("Fetch finished");
       const result = await response.json();
-
+alert(JSON.stringify(result));
       if (!response.ok) {
         throw new Error(
           result.error || "Could not analyze the image."
