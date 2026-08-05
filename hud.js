@@ -13,7 +13,9 @@ const bootMessage = document.getElementById("bootMessage");
 const bootProgress = document.getElementById("bootProgress");
 const bootPercent = document.getElementById("bootPercent");
 const bootLog = document.getElementById("bootLog");
-const hudShell = document.getElementById("hudShell");
+const hudShell =
+  document.getElementById("hudShell") ||
+  document.querySelector(".hud-shell");
 
 const activityFeed = document.getElementById("activityFeed");
 const activeModule = document.getElementById("activeModule");
@@ -275,10 +277,10 @@ bootLog.scrollTop = bootLog.scrollHeight;
     setTimeout(resolve, 700);
   });
 
-bootScreen.classList.add("hidden");
-
 hudShell.classList.remove("hud-hidden");
 hudShell.classList.add("hud-online");
+
+bootScreen.classList.add("hidden");
 
 hudCore.classList.add("powering-up");
 
