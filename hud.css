@@ -1272,3 +1272,16 @@ a {
 .arc-core.powering-up .orbit-c {
   animation-duration: 0.7s;
 }
+#reactorCanvas {
+  position: absolute;
+  inset: 16%;
+  width: 68%;
+  height: 68%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.arc-core .reactor,
+.arc-core .reactor-halo {
+  z-index: 2;
+}

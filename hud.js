@@ -294,3 +294,194 @@ setInterval(
   updateClock,
   1000
 );
+function initializeThreeReactor() {
+  const canvas = document.getElementById("reactorCanvas");
+
+  if (!canvas || typeof THREE === "undefined") {
+    console.error("Three.js reactor could not initialize.");
+    return;
+  }
+
+  const scene = new THREE.Scene();
+
+  const camera = new THREE.PerspectiveCamera(
+    45,
+    1,
+    0.1,
+    100
+  );
+
+  camera.position.z = 6;
+
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    alpha: true,
+    antialias: true
+  });
+
+  renderer.setPixelRatio(
+    Math.min(window.devicePixelRatio || 1, 2)
+  );
+
+  const coreGroup = new THREE.Group();
+  scene.add(coreGroup);
+
+  const coreGeometry = new THREE.IcosahedronGeometry(
+    1,
+    3
+  );
+
+  const coreMaterial = new THREE.MeshBasicMaterial({
+    color: 0x74f7ff,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.88
+  });
+
+  const coreMesh = new THREE.Mesh(
+    coreGeometry,
+    coreMaterial
+  );
+
+  coreGroup.add(coreMesh);
+
+  const innerGeometry = new THREE.SphereGeometry(
+    0.55,
+    32,
+    32
+  );
+
+  const innerMaterial =
+    new THREE.MeshBasicMaterial({
+      color: 0xd8fdff,
+      transparent: true,
+      opacity: 0.55
+    });
+
+  const innerMesh = new THREE.Mesh(
+    innerGeometry,
+    innerMaterial
+  );
+
+  coreGroup.add(innerMesh);
+
+  function createRing(radius, tube, color) {
+    const geometry = new THREE.TorusGeometry(
+      radius,
+      tube,
+      16,
+      100
+    );
+
+    const material =
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.72,
+        wireframe: true
+      });
+
+    return new THREE.Mesh(
+      geometry,
+      material
+    );
+  }
+
+  const ringOne = createRing(
+    1.55,
+    0.025,
+    0x50efff
+  );
+
+  const ringTwo = createRing(
+    1.9,
+    0.025,
+    0x1fd6c2
+  );
+
+  const ringThree = createRing(
+    2.25,
+    0.02,
+    0x0d74d5
+  );
+
+  ringOne.rotation.x = Math.PI / 2;
+  ringTwo.rotation.y = Math.PI / 2;
+  ringThree.rotation.x = Math.PI / 3;
+  ringThree.rotation.y = Math.PI / 4;
+
+  coreGroup.add(
+    ringOne,
+    ringTwo,
+    ringThree
+  );
+
+  const pointLight =
+    new THREE.PointLight(
+      0x50efff,
+      2,
+      20
+    );
+
+  pointLight.position.set(0, 0, 3);
+  scene.add(pointLight);
+
+  function resizeReactor() {
+    const rect =
+      canvas.getBoundingClientRect();
+
+    const width = Math.max(
+      rect.width,
+      1
+    );
+
+    const height = Math.max(
+      rect.height,
+      1
+    );
+
+    renderer.setSize(
+      width,
+      height,
+      false
+    );
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+  }
+
+  function animateReactor() {
+    requestAnimationFrame(
+      animateReactor
+    );
+
+    const speed =
+      hudCore.classList.contains("thinking")
+        ? 0.025
+        : 0.008;
+
+    coreMesh.rotation.x += speed;
+    coreMesh.rotation.y += speed * 1.2;
+
+    innerMesh.rotation.y -= speed * 0.7;
+
+    ringOne.rotation.z += speed;
+    ringTwo.rotation.x -= speed * 0.8;
+    ringThree.rotation.z -= speed * 0.55;
+
+    renderer.render(
+      scene,
+      camera
+    );
+  }
+
+  window.addEventListener(
+    "resize",
+    resizeReactor
+  );
+
+  resizeReactor();
+  animateReactor();
+}
+
+initializeThreeReactor();
