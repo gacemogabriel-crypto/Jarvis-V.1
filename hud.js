@@ -1,3 +1,4 @@
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js";
 const hudClock = document.getElementById("hudClock");
 const hudDate = document.getElementById("hudDate");
 
@@ -297,7 +298,7 @@ setInterval(
 function initializeThreeReactor() {
   const canvas = document.getElementById("reactorCanvas");
 
-  if (!canvas || typeof THREE === "undefined") {
+  if (!canvas) {
     console.error("Three.js reactor could not initialize.");
     return;
   }
