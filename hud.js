@@ -1,84 +1,236 @@
 const hudClock = document.getElementById("hudClock");
-const hudCommandInput = document.getElementById("hudCommandInput");
-const hudSendButton = document.getElementById("hudSendButton");
-const hudResponse = document.getElementById("hudResponse");
+const hudDate = document.getElementById("hudDate");
+
+const commandForm = document.getElementById("hudCommandForm");
+const commandInput = document.getElementById("hudCommandInput");
+const sendButton = document.getElementById("hudSendButton");
+
+const responsePanel = document.querySelector("#hudResponse p");
 const hudState = document.getElementById("hudState");
-const hudActivity = document.getElementById("hudActivity");
-const hudCore = document.querySelector(".hud-core");
+const hudCore = document.getElementById("hudCore");
+
+const activityFeed = document.getElementById("activityFeed");
+const activeModule = document.getElementById("activeModule");
+
+const moduleButtons =
+  document.querySelectorAll(".module-button");
+
+const actionButtons =
+  document.querySelectorAll("[data-action]");
 
 function updateClock() {
   const now = new Date();
 
-  hudClock.textContent = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+  hudClock.textContent =
+    now.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+
+  hudDate.textContent =
+    now.toLocaleDateString([], {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
 }
 
-function setHudState(state, activity) {
+function addActivity(label, message) {
+  const item = document.createElement("li");
+  const time = document.createElement("time");
+  const text = document.createElement("span");
+
+  time.textContent = label;
+  text.textContent = message;
+
+  item.append(time, text);
+
+  activityFeed.prepend(item);
+
+  while (activityFeed.children.length > 7) {
+    activityFeed.lastElementChild.remove();
+  }
+}
+
+function setSystemState(state, message, mode = "normal") {
+
   hudState.textContent = state;
-  hudActivity.textContent = activity;
+
+  responsePanel.textContent = message;
+
+  hudCore.classList.toggle(
+    "thinking",
+    mode === "thinking"
+  );
+
+  hudCore.classList.toggle(
+    "error",
+    mode === "error"
+  );
 }
 
-async function executeCommand() {
-  const command = hudCommandInput.value.trim();
+async function executeCommand(event) {
+
+  event.preventDefault();
+
+  const command =
+    commandInput.value.trim();
 
   if (!command) return;
 
-  hudCommandInput.value = "";
-  hudSendButton.disabled = true;
-  hudCore.classList.add("thinking");
+  sendButton.disabled = true;
 
-  setHudState("PROCESSING", `Analyzing command: ${command}`);
-  hudResponse.textContent = "Processing...";
+  commandInput.value = "";
+
+  setSystemState(
+    "PROCESSING",
+    "Analyzing command...",
+    "thinking"
+  );
+
+  addActivity(
+    "SCAN",
+    `Processing: ${command}`
+  );
 
   try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        message: command
-      })
-    });
 
-    const result = await response.json();
+    const response =
+      await fetch("/api/chat", {
+        method: "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body: JSON.stringify({
+          message: command
+        })
+      });
+
+    const result =
+      await response.json();
 
     if (!response.ok) {
+
       throw new Error(
-        result.error || "JARVIS could not process the command."
+        result.error ||
+        result.message ||
+        "JARVIS could not process the command."
       );
+
     }
 
-    hudResponse.textContent =
+    const answer =
       result.reply ||
       result.response ||
       result.message ||
       "Command completed.";
 
-    setHudState("ONLINE", "Command completed successfully.");
+    setSystemState(
+      "ONLINE",
+      answer
+    );
+
+    addActivity(
+      "DONE",
+      "Command completed successfully."
+    );
+
   } catch (error) {
+
     console.error(error);
 
-    hudResponse.textContent =
-      error.message || "Connection error.";
+    setSystemState(
+      "ERROR",
+      error.message ||
+      "Unable to complete command.",
+      "error"
+    );
 
-    setHudState("ERROR", "Unable to complete command.");
+    addActivity(
+      "ERROR",
+      error.message
+    );
+
   } finally {
-    hudSendButton.disabled = false;
-    hudCore.classList.remove("thinking");
-    hudCommandInput.focus();
+
+    sendButton.disabled = false;
+
+    window.setTimeout(() => {
+
+      hudCore.classList.remove(
+        "thinking"
+      );
+
+      hudCore.classList.remove(
+        "error"
+      );
+
+    }, 1200);
+
+    commandInput.focus();
+
   }
+
 }
 
-hudSendButton.addEventListener("click", executeCommand);
+commandForm.addEventListener(
+  "submit",
+  executeCommand
+);
 
-hudCommandInput.addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    executeCommand();
-  }
+moduleButtons.forEach(button => {
+
+  button.addEventListener(
+    "click",
+    () => {
+
+      moduleButtons.forEach(b =>
+        b.classList.remove("active")
+      );
+
+      button.classList.add("active");
+
+      const label =
+        button.innerText.trim();
+
+      activeModule.textContent =
+        label.toUpperCase();
+
+      addActivity(
+        "MODE",
+        `${label} selected`
+      );
+
+    }
+  );
+
+});
+
+actionButtons.forEach(button => {
+
+  button.addEventListener(
+    "click",
+    () => {
+
+      const action =
+        button.dataset.action;
+
+      addActivity(
+        "INPUT",
+        `${action} activated`
+      );
+
+    }
+  );
+
 });
 
 updateClock();
-setInterval(updateClock, 1000);
+
+setInterval(
+  updateClock,
+  1000
+);

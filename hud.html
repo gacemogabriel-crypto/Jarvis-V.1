@@ -2,99 +2,411 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-  <title>JARVIS HUD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#02070c" />
+
+  <title>JARVIS HUD v2</title>
+
   <link rel="stylesheet" href="hud.css" />
 </head>
 
 <body>
+  <canvas id="particleCanvas" aria-hidden="true"></canvas>
+
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="grid-field" aria-hidden="true"></div>
+
   <main class="hud-shell">
-    <header class="hud-header">
-      <div>
-        <p class="eyebrow">STARK INTERFACE</p>
+
+    <header class="topbar hud-frame">
+      <div class="brand">
+        <p class="micro-label">STARK INTERFACE // MARK VII</p>
+
         <h1>J.A.R.V.I.S.</h1>
+
+        <p class="subline">
+          JUST A RATHER VERY INTELLIGENT SYSTEM
+        </p>
       </div>
 
-      <div class="header-status">
-        <span class="status-dot"></span>
-        <span>ONLINE</span>
-        <span id="hudTime">00:00</span>
+      <div class="top-status">
+        <div class="status-chip">
+          <span class="status-dot"></span>
+          <span>ONLINE</span>
+        </div>
+
+        <div class="clock-block">
+          <strong id="hudClock">00:00</strong>
+          <span id="hudDate">-- --- ----</span>
+        </div>
       </div>
     </header>
 
-    <section class="hud-grid">
-      <aside class="hud-panel left-panel">
-        <h2>COMMAND CENTER</h2>
+    <section class="dashboard">
 
-        <button type="button">Conversation</button>
-        <button type="button">Memory</button>
-        <button type="button">Knowledge</button>
-        <button type="button">Teach JARVIS</button>
+      <aside class="left-stack">
+
+        <section class="hud-card nav-card">
+          <div class="card-heading">
+            <span>01</span>
+            <h2>COMMAND MODULES</h2>
+          </div>
+
+          <nav class="module-list" aria-label="JARVIS modules">
+
+            <button
+              class="module-button active"
+              data-module="conversation"
+              type="button"
+            >
+              <span class="module-index">A1</span>
+              <span>Conversation</span>
+              <i></i>
+            </button>
+
+            <button
+              class="module-button"
+              data-module="memory"
+              type="button"
+            >
+              <span class="module-index">A2</span>
+              <span>Memory Bank</span>
+              <i></i>
+            </button>
+
+            <button
+              class="module-button"
+              data-module="knowledge"
+              type="button"
+            >
+              <span class="module-index">A3</span>
+              <span>Knowledge Base</span>
+              <i></i>
+            </button>
+
+            <button
+              class="module-button"
+              data-module="teach"
+              type="button"
+            >
+              <span class="module-index">A4</span>
+              <span>Teach JARVIS</span>
+              <i></i>
+            </button>
+
+          </nav>
+        </section>
+
+        <section class="hud-card gauge-card">
+          <div class="card-heading">
+            <span>02</span>
+            <h2>LIVE TELEMETRY</h2>
+          </div>
+
+          <div class="mini-gauges">
+
+            <div class="mini-gauge" style="--value: 76">
+              <div class="gauge-ring">
+                <b>76%</b>
+              </div>
+              <span>CORE</span>
+            </div>
+
+            <div class="mini-gauge" style="--value: 58">
+              <div class="gauge-ring">
+                <b>58%</b>
+              </div>
+              <span>MEMORY</span>
+            </div>
+
+            <div class="mini-gauge" style="--value: 92">
+              <div class="gauge-ring">
+                <b>92%</b>
+              </div>
+              <span>NETWORK</span>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="hud-card activity-card">
+          <div class="card-heading">
+            <span>03</span>
+            <h2>ACTIVITY FEED</h2>
+          </div>
+
+          <ol id="activityFeed" class="activity-feed">
+            <li>
+              <time>INIT</time>
+              <span>All systems initialized.</span>
+            </li>
+
+            <li>
+              <time>LINK</time>
+              <span>Knowledge database connected.</span>
+            </li>
+
+            <li>
+              <time>READY</time>
+              <span>Awaiting user command.</span>
+            </li>
+          </ol>
+        </section>
+
       </aside>
 
-      <section class="core-panel">
-        <div class="core-rings">
-          <div class="ring ring-outer"></div>
-          <div class="ring ring-middle"></div>
-          <div class="ring ring-inner"></div>
-          <div class="core-light"></div>
+      <section class="core-stage hud-frame">
+
+        <div class="stage-labels" aria-hidden="true">
+          <span>NEURAL CORE</span>
+          <span>SYNC 100%</span>
         </div>
 
-        <p class="core-state">AWAITING COMMAND</p>
+        <div
+          id="hudCore"
+          class="arc-core"
+          aria-label="Animated JARVIS core"
+        >
+          <div class="orbit orbit-a">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
 
-        <div class="command-box">
+          <div class="orbit orbit-b">
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="orbit orbit-c"></div>
+
+          <div class="ticks"></div>
+
+          <div class="reactor-halo"></div>
+
+          <div class="reactor">
+            <div class="reactor-inner"></div>
+          </div>
+
+          <div class="scanner-line"></div>
+        </div>
+
+        <div class="state-zone">
+          <p id="hudState" class="hud-state">
+            AWAITING COMMAND
+          </p>
+
+          <div class="voice-wave" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <div id="hudResponse" class="response-panel">
+          <span class="response-label">
+            JARVIS RESPONSE
+          </span>
+
+          <p>
+            Systems online. How may I assist you?
+          </p>
+        </div>
+
+        <form id="hudCommandForm" class="command-console">
+          <span class="prompt-mark">&gt;</span>
+
           <input
             id="hudCommandInput"
             type="text"
             placeholder="Enter command..."
+            autocomplete="off"
+            aria-label="Enter command"
           />
 
-          <button id="hudSendButton" type="button">
-            EXECUTE
+          <button id="hudSendButton" type="submit">
+            <span>EXECUTE</span>
+            <i></i>
           </button>
-        </div>
+        </form>
+
       </section>
 
-      <aside class="hud-panel right-panel">
-        <h2>SYSTEM STATUS</h2>
+      <aside class="right-stack">
 
-        <div class="status-row">
-          <span>CORE</span>
-          <strong>ACTIVE</strong>
-        </div>
+        <section class="hud-card systems-card">
+          <div class="card-heading">
+            <span>04</span>
+            <h2>SYSTEM STATUS</h2>
+          </div>
 
-        <div class="status-row">
-          <span>VOICE</span>
-          <strong>READY</strong>
-        </div>
+          <div class="system-list">
 
-        <div class="status-row">
-          <span>VISION</span>
-          <strong>ONLINE</strong>
-        </div>
+            <div>
+              <span>CORE</span>
+              <b>ACTIVE</b>
+              <i style="--level: 96%"></i>
+            </div>
 
-        <div class="status-row">
-          <span>MEMORY</span>
-          <strong>LINKED</strong>
-        </div>
+            <div>
+              <span>VOICE</span>
+              <b>READY</b>
+              <i style="--level: 88%"></i>
+            </div>
 
-        <div class="status-row">
-          <span>DATABASE</span>
-          <strong>CONNECTED</strong>
-        </div>
+            <div>
+              <span>VISION</span>
+              <b>ONLINE</b>
+              <i style="--level: 92%"></i>
+            </div>
+
+            <div>
+              <span>MEMORY</span>
+              <b>LINKED</b>
+              <i style="--level: 73%"></i>
+            </div>
+
+            <div>
+              <span>DATABASE</span>
+              <b>CONNECTED</b>
+              <i style="--level: 84%"></i>
+            </div>
+
+          </div>
+        </section>
+
+        <section class="hud-card data-card">
+          <div class="card-heading">
+            <span>05</span>
+            <h2>DATA STREAM</h2>
+          </div>
+
+          <svg
+            class="data-chart"
+            viewBox="0 0 320 120"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <polyline
+              points="
+                0,86
+                15,84
+                24,90
+                38,70
+                51,74
+                63,38
+                72,66
+                91,60
+                103,78
+                118,30
+                129,58
+                145,53
+                157,82
+                172,49
+                185,57
+                196,25
+                209,63
+                221,50
+                235,72
+                248,42
+                260,48
+                274,20
+                286,57
+                300,44
+                320,50
+              "
+            ></polyline>
+
+            <line
+              x1="0"
+              y1="100"
+              x2="320"
+              y2="100"
+            ></line>
+          </svg>
+
+          <div class="data-values">
+            <span>
+              UPLINK
+              <b>2.8 GB/s</b>
+            </span>
+
+            <span>
+              LATENCY
+              <b>18 ms</b>
+            </span>
+          </div>
+        </section>
+
+        <section class="hud-card quick-card">
+          <div class="card-heading">
+            <span>06</span>
+            <h2>QUICK ACCESS</h2>
+          </div>
+
+          <div class="quick-grid">
+            <button data-action="voice" type="button">
+              VOICE
+            </button>
+
+            <button data-action="camera" type="button">
+              VISION
+            </button>
+
+            <button data-action="upload" type="button">
+              UPLOAD
+            </button>
+
+            <button data-action="terminal" type="button">
+              TERMINAL
+            </button>
+          </div>
+        </section>
+
       </aside>
+
     </section>
 
-    <footer class="hud-footer">
-      <button type="button">VOICE</button>
-      <button type="button">CAMERA</button>
-      <button type="button">UPLOAD</button>
-      <button type="button">TERMINAL</button>
-      <button type="button">KNOWLEDGE GRAPH</button>
+    <footer class="bottom-dock hud-frame">
+
+      <div class="dock-section">
+        <span class="dock-label">ACTIVE MODE</span>
+        <strong id="activeModule">
+          CONVERSATION
+        </strong>
+      </div>
+
+      <div class="dock-radar" aria-hidden="true">
+        <span></span>
+      </div>
+
+      <div class="dock-actions">
+        <button data-action="voice" type="button">
+          MIC
+        </button>
+
+        <button data-action="camera" type="button">
+          CAM
+        </button>
+
+        <button data-action="upload" type="button">
+          FILE
+        </button>
+
+        <a href="index.html">
+          CLASSIC UI
+        </a>
+      </div>
+
     </footer>
+
   </main>
 
   <script type="module" src="hud.js"></script>
