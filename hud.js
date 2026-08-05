@@ -12,6 +12,7 @@ const bootScreen = document.getElementById("bootScreen");
 const bootMessage = document.getElementById("bootMessage");
 const bootProgress = document.getElementById("bootProgress");
 const bootPercent = document.getElementById("bootPercent");
+const bootLog = document.getElementById("bootLog");
 
 const activityFeed = document.getElementById("activityFeed");
 const activeModule = document.getElementById("activeModule");
@@ -246,6 +247,10 @@ async function runBootSequence() {
     bootMessage.textContent = step.message;
     bootProgress.style.width = `${step.progress}%`;
     bootPercent.textContent = `${step.progress}%`;
+    const logLine = document.createElement("p");
+logLine.textContent = `[OK] ${step.message}`;
+bootLog.appendChild(logLine);
+bootLog.scrollTop = bootLog.scrollHeight;
 
     await new Promise(resolve => {
       setTimeout(resolve, 550);
