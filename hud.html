@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+  <title>JARVIS HUD</title>
+  <link rel="stylesheet" href="hud.css" />
+</head>
+
+<body>
+  <main class="hud-shell">
+    <header class="hud-header">
+      <div>
+        <p class="eyebrow">STARK INTERFACE</p>
+        <h1>J.A.R.V.I.S.</h1>
+      </div>
+
+      <div class="header-status">
+        <span class="status-dot"></span>
+        <span>ONLINE</span>
+        <span id="hudTime">00:00</span>
+      </div>
+    </header>
+
+    <section class="hud-grid">
+      <aside class="hud-panel left-panel">
+        <h2>COMMAND CENTER</h2>
+
+        <button type="button">Conversation</button>
+        <button type="button">Memory</button>
+        <button type="button">Knowledge</button>
+        <button type="button">Teach JARVIS</button>
+      </aside>
+
+      <section class="core-panel">
+        <div class="core-rings">
+          <div class="ring ring-outer"></div>
+          <div class="ring ring-middle"></div>
+          <div class="ring ring-inner"></div>
+          <div class="core-light"></div>
+        </div>
+
+        <p class="core-state">AWAITING COMMAND</p>
+
+        <div class="command-box">
+          <input
+            id="hudCommandInput"
+            type="text"
+            placeholder="Enter command..."
+          />
+
+          <button id="hudSendButton" type="button">
+            EXECUTE
+          </button>
+        </div>
+      </section>
+
+      <aside class="hud-panel right-panel">
+        <h2>SYSTEM STATUS</h2>
+
+        <div class="status-row">
+          <span>CORE</span>
+          <strong>ACTIVE</strong>
+        </div>
+
+        <div class="status-row">
+          <span>VOICE</span>
+          <strong>READY</strong>
+        </div>
+
+        <div class="status-row">
+          <span>VISION</span>
+          <strong>ONLINE</strong>
+        </div>
+
+        <div class="status-row">
+          <span>MEMORY</span>
+          <strong>LINKED</strong>
+        </div>
+
+        <div class="status-row">
+          <span>DATABASE</span>
+          <strong>CONNECTED</strong>
+        </div>
+      </aside>
+    </section>
+
+    <footer class="hud-footer">
+      <button type="button">VOICE</button>
+      <button type="button">CAMERA</button>
+      <button type="button">UPLOAD</button>
+      <button type="button">TERMINAL</button>
+      <button type="button">KNOWLEDGE GRAPH</button>
+    </footer>
+  </main>
+
+  <script type="module" src="hud.js"></script>
+</body>
+</html>

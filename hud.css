@@ -1,0 +1,467 @@
+:root {
+  --cyan: #5cecff;
+  --cyan-soft: rgba(92, 236, 255, 0.2);
+  --cyan-glow: rgba(92, 236, 255, 0.55);
+  --panel: rgba(3, 18, 30, 0.72);
+  --panel-dark: rgba(1, 10, 18, 0.9);
+  --text: #eafcff;
+  --muted: #7fa7b3;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: #02070c;
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.hud-background {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at center, rgba(0, 110, 140, 0.22), transparent 42%),
+    linear-gradient(180deg, #04111b 0%, #02070c 100%);
+  z-index: -3;
+}
+
+.hud-grid-overlay {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(92, 236, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(92, 236, 255, 0.045) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+  z-index: -2;
+}
+
+.hud-shell {
+  min-height: 100vh;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+}
+
+.hud-header,
+.hud-footer,
+.hud-panel,
+.hud-core-panel {
+  border: 1px solid rgba(92, 236, 255, 0.28);
+  background: var(--panel);
+  box-shadow:
+    inset 0 0 24px rgba(92, 236, 255, 0.04),
+    0 0 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+}
+
+.hud-header {
+  min-height: 82px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hud-kicker {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+}
+
+.hud-header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+  text-shadow: 0 0 16px var(--cyan-glow);
+}
+
+.hud-header-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--cyan);
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 12px var(--cyan);
+}
+
+.hud-layout {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 250px;
+  gap: 16px;
+  min-height: 0;
+}
+
+.hud-panel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hud-panel h2 {
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+  letter-spacing: 0.16em;
+  color: var(--cyan);
+}
+
+.hud-panel button,
+.hud-footer button,
+#hudSendButton {
+  border: 1px solid rgba(92, 236, 255, 0.35);
+  background: rgba(3, 28, 42, 0.72);
+  color: var(--text);
+  padding: 11px 12px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.hud-panel button:hover,
+.hud-footer button:hover,
+#hudSendButton:hover {
+  border-color: var(--cyan);
+  background: rgba(12, 70, 88, 0.6);
+  box-shadow: 0 0 16px rgba(92, 236, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.activity-block {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(92, 236, 255, 0.18);
+}
+
+.activity-block span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+}
+
+.activity-block p {
+  margin: 8px 0 0;
+  line-height: 1.5;
+  color: #c9f8ff;
+}
+
+.hud-core-panel {
+  position: relative;
+  min-height: 620px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.hud-core-panel::before,
+.hud-core-panel::after {
+  content: "";
+  position: absolute;
+  width: 65%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan-soft), transparent);
+}
+
+.hud-core-panel::before {
+  top: 24%;
+}
+
+.hud-core-panel::after {
+  bottom: 24%;
+}
+
+.hud-core {
+  position: relative;
+  width: min(42vw, 360px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(92, 236, 255, 0.38);
+  box-shadow:
+    inset 0 0 22px rgba(92, 236, 255, 0.08),
+    0 0 20px rgba(92, 236, 255, 0.08);
+}
+
+.ring-one {
+  inset: 0;
+  border-style: dashed;
+  animation: spin 18s linear infinite;
+}
+
+.ring-two {
+  inset: 9%;
+  border-width: 2px;
+  border-right-color: transparent;
+  animation: spinReverse 12s linear infinite;
+}
+
+.ring-three {
+  inset: 21%;
+  border-left-color: transparent;
+  border-bottom-color: transparent;
+  animation: spin 8s linear infinite;
+}
+
+.ring-four {
+  inset: 33%;
+  border-width: 3px;
+  animation: pulseRing 2.4s ease-in-out infinite;
+}
+
+.core-center {
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, white 0%, #a9f8ff 22%, #32d9ef 50%, #0b5f74 75%, transparent 76%);
+  box-shadow:
+    0 0 20px #8ef5ff,
+    0 0 50px rgba(92, 236, 255, 0.75),
+    0 0 90px rgba(92, 236, 255, 0.35);
+  animation: corePulse 1.8s ease-in-out infinite;
+}
+
+.hud-state {
+  margin: 28px 0 18px;
+  color: var(--cyan);
+  letter-spacing: 0.18em;
+  font-size: 0.86rem;
+}
+
+.hud-command {
+  width: min(760px, 100%);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+}
+
+#hudCommandInput {
+  min-width: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(92, 236, 255, 0.35);
+  outline: none;
+  background: rgba(0, 12, 22, 0.82);
+  color: var(--text);
+}
+
+#hudCommandInput:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 16px rgba(92, 236, 255, 0.14);
+}
+
+.hud-response {
+  width: min(760px, 100%);
+  min-height: 82px;
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid rgba(92, 236, 255, 0.2);
+  background: rgba(0, 10, 18, 0.65);
+  color: #c9f8ff;
+  line-height: 1.55;
+}
+
+.system-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(92, 236, 255, 0.12);
+}
+
+.system-row span {
+  color: var(--muted);
+}
+
+.system-row strong {
+  color: var(--cyan);
+  font-size: 0.8rem;
+}
+
+.system-meter {
+  margin-top: 18px;
+}
+
+.system-meter span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+}
+
+.meter-track {
+  height: 8px;
+  background: rgba(92, 236, 255, 0.1);
+  overflow: hidden;
+}
+
+.meter-fill {
+  width: 72%;
+  height: 100%;
+  background: linear-gradient(90deg, #0b6076, var(--cyan));
+  box-shadow: 0 0 14px rgba(92, 236, 255, 0.5);
+  animation: meterPulse 2s ease-in-out infinite;
+}
+
+.hud-footer {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spinReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes pulseRing {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes corePulse {
+  0%,
+  100% {
+    transform: scale(0.94);
+    filter: brightness(0.9);
+  }
+
+  50% {
+    transform: scale(1.06);
+    filter: brightness(1.25);
+  }
+}
+
+@keyframes meterPulse {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 980px) {
+  .hud-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .hud-left,
+  .hud-right {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hud-panel h2,
+  .activity-block,
+  .system-meter {
+    grid-column: 1 / -1;
+  }
+
+  .hud-core-panel {
+    min-height: 560px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hud-shell {
+    padding: 10px;
+  }
+
+  .hud-header {
+    align-items: flex-start;
+    gap: 14px;
+    flex-direction: column;
+  }
+
+  .hud-left,
+  .hud-right {
+    grid-template-columns: 1fr;
+  }
+
+  .hud-command {
+    grid-template-columns: 1fr;
+  }
+
+  .hud-footer {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hud-footer button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .hud-core {
+    width: min(78vw, 320px);
+  }
+}
+.hud-core.thinking .ring-one {
+  animation-duration: 3s;
+}
+
+.hud-core.thinking .ring-two {
+  animation-duration: 2s;
+}
+
+.hud-core.thinking .ring-three {
+  animation-duration: 1.2s;
+}
+
+.hud-core.thinking .core-center {
+  animation-duration: 0.7s;
+}
