@@ -1285,3 +1285,14 @@ a {
 .arc-core .reactor-halo {
   z-index: 2;
 }
+.arc-core .reactor,
+.arc-core .reactor-halo {
+  opacity: 0;
+}
+
+#reactorCanvas {
+  inset: 20%;
+  width: 60%;
+  height: 60%;
+  z-index: 4;
+}

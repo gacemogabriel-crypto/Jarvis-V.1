@@ -327,24 +327,43 @@ function initializeThreeReactor() {
   const coreGroup = new THREE.Group();
   scene.add(coreGroup);
 
-  const coreGeometry = new THREE.IcosahedronGeometry(
-    1,
-    3
-  );
+const coreGeometry = new THREE.SphereGeometry(
+  0.9,
+  48,
+  48
+);
 
-  const coreMaterial = new THREE.MeshBasicMaterial({
-    color: 0x74f7ff,
-    wireframe: true,
-    transparent: true,
-    opacity: 0.88
-  });
+const coreMaterial = new THREE.MeshBasicMaterial({
+  color: 0x8cf8ff,
+  transparent: true,
+  opacity: 0.3
+});
 
-  const coreMesh = new THREE.Mesh(
-    coreGeometry,
-    coreMaterial
-  );
+const coreMesh = new THREE.Mesh(
+  coreGeometry,
+  coreMaterial
+);
 
-  coreGroup.add(coreMesh);
+coreGroup.add(coreMesh);
+
+const wireGeometry = new THREE.IcosahedronGeometry(
+  1.05,
+  2
+);
+
+const wireMaterial = new THREE.MeshBasicMaterial({
+  color: 0x50efff,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.65
+});
+
+const wireMesh = new THREE.Mesh(
+  wireGeometry,
+  wireMaterial
+);
+
+coreGroup.add(wireMesh);
 
   const innerGeometry = new THREE.SphereGeometry(
     0.55,
@@ -463,6 +482,8 @@ function initializeThreeReactor() {
 
     coreMesh.rotation.x += speed;
     coreMesh.rotation.y += speed * 1.2;
+    wireMesh.rotation.x -= speed * 0.7;
+wireMesh.rotation.y += speed * 1.4;
 
     innerMesh.rotation.y -= speed * 0.7;
 
