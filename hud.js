@@ -425,10 +425,16 @@ coreGroup.add(wireMesh);
     0x0d74d5
   );
 
-  ringOne.rotation.x = Math.PI / 2;
-  ringTwo.rotation.y = Math.PI / 2;
-  ringThree.rotation.x = Math.PI / 3;
-  ringThree.rotation.y = Math.PI / 4;
+ringOne.rotation.x = Math.PI * 0.35;
+ringOne.rotation.y = Math.PI * 0.15;
+
+ringTwo.rotation.x = Math.PI * 0.65;
+ringTwo.rotation.y = Math.PI * 0.35;
+ringTwo.rotation.z = Math.PI * 0.2;
+
+ringThree.rotation.x = Math.PI * 0.45;
+ringThree.rotation.y = Math.PI * 0.7;
+ringThree.rotation.z = Math.PI * 0.4;
 
   coreGroup.add(
     ringOne,
@@ -486,10 +492,13 @@ coreGroup.add(wireMesh);
 wireMesh.rotation.y += speed * 1.4;
 
     innerMesh.rotation.y -= speed * 0.7;
+ringOne.rotation.z += speed;
 
-    ringOne.rotation.z += speed;
-    ringTwo.rotation.x -= speed * 0.8;
-    ringThree.rotation.z -= speed * 0.55;
+ringTwo.rotation.y -= speed * 0.8;
+ringTwo.rotation.z += speed * 0.55;
+
+ringThree.rotation.x -= speed * 0.5;
+ringThree.rotation.y += speed * 0.7;
 
     renderer.render(
       scene,
