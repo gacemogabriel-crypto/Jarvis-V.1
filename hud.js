@@ -8,6 +8,10 @@ const sendButton = document.getElementById("hudSendButton");
 const responsePanel = document.querySelector("#hudResponse p");
 const hudState = document.getElementById("hudState");
 const hudCore = document.getElementById("hudCore");
+const bootScreen = document.getElementById("bootScreen");
+const bootMessage = document.getElementById("bootMessage");
+const bootProgress = document.getElementById("bootProgress");
+const bootPercent = document.getElementById("bootPercent");
 
 const activityFeed = document.getElementById("activityFeed");
 const activeModule = document.getElementById("activeModule");
@@ -227,7 +231,39 @@ actionButtons.forEach(button => {
   );
 
 });
+async function runBootSequence() {
+  const steps = [
+    { progress: 12, message: "INITIALIZING CORE..." },
+    { progress: 28, message: "LOADING MEMORY..." },
+    { progress: 46, message: "CONNECTING KNOWLEDGE..." },
+    { progress: 63, message: "ACTIVATING VISION..." },
+    { progress: 79, message: "CALIBRATING VOICE..." },
+    { progress: 92, message: "RUNNING DIAGNOSTICS..." },
+    { progress: 100, message: "SYSTEM ONLINE" }
+  ];
 
+  for (const step of steps) {
+    bootMessage.textContent = step.message;
+    bootProgress.style.width = `${step.progress}%`;
+    bootPercent.textContent = `${step.progress}%`;
+
+    await new Promise(resolve => {
+      setTimeout(resolve, 550);
+    });
+  }
+
+  await new Promise(resolve => {
+    setTimeout(resolve, 700);
+  });
+
+  bootScreen.classList.add("hidden");
+
+  addActivity(
+    "BOOT",
+    "Startup sequence completed."
+  );
+}
+runBootSequence();
 updateClock();
 
 setInterval(

@@ -1108,4 +1108,87 @@ a {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
   }
+}.boot-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(circle at center,
+      rgba(0,120,160,.15),
+      #01070c 70%);
+
+  transition:
+    opacity .9s ease,
+    visibility .9s ease;
+}
+
+.boot-screen.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.boot-content {
+  width: min(520px, 90vw);
+  text-align: center;
+}
+
+.boot-label {
+  color: var(--cyan-dim);
+  letter-spacing: .45em;
+  font-size: .72rem;
+  margin-bottom: 20px;
+}
+
+#bootMessage {
+  color: white;
+  font-size: 2rem;
+  letter-spacing: .18em;
+  margin-bottom: 40px;
+
+  text-shadow:
+    0 0 20px var(--cyan);
+}
+
+.boot-track {
+  height: 8px;
+
+  border-radius: 999px;
+
+  overflow: hidden;
+
+  background:
+    rgba(255,255,255,.08);
+}
+
+.boot-progress {
+  width: 0%;
+  height: 100%;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--cyan-dim),
+      var(--cyan),
+      white
+    );
+
+  box-shadow:
+    0 0 18px var(--cyan);
+
+  transition: width .25s linear;
+}
+
+.boot-percent {
+  margin-top: 18px;
+
+  color: var(--cyan);
+
+  font-size: 1.1rem;
+
+  letter-spacing: .2em;
 }
