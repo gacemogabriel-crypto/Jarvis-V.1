@@ -1238,3 +1238,37 @@ a {
   }
 
 }
+.hud-hidden {
+  opacity: 0;
+  transform: scale(0.98);
+  pointer-events: none;
+}
+
+.hud-shell {
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s ease;
+}
+
+.hud-shell.hud-online {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.arc-core.powering-up .reactor {
+  animation-duration: 0.25s;
+  filter: brightness(1.8);
+}
+
+.arc-core.powering-up .orbit-a {
+  animation-duration: 1.8s;
+}
+
+.arc-core.powering-up .orbit-b {
+  animation-duration: 1.2s;
+}
+
+.arc-core.powering-up .orbit-c {
+  animation-duration: 0.7s;
+}

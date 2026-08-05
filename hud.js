@@ -13,6 +13,7 @@ const bootMessage = document.getElementById("bootMessage");
 const bootProgress = document.getElementById("bootProgress");
 const bootPercent = document.getElementById("bootPercent");
 const bootLog = document.getElementById("bootLog");
+const hudShell = document.getElementById("hudShell");
 
 const activityFeed = document.getElementById("activityFeed");
 const activeModule = document.getElementById("activeModule");
@@ -274,12 +275,23 @@ bootLog.scrollTop = bootLog.scrollHeight;
     setTimeout(resolve, 700);
   });
 
-  bootScreen.classList.add("hidden");
+bootScreen.classList.add("hidden");
 
-  addActivity(
-    "BOOT",
-    "Startup sequence completed."
-  );
+hudShell.classList.remove("hud-hidden");
+hudShell.classList.add("hud-online");
+
+hudCore.classList.add("powering-up");
+
+await new Promise(resolve => {
+  setTimeout(resolve, 1200);
+});
+
+hudCore.classList.remove("powering-up");
+
+addActivity(
+  "BOOT",
+  "Startup sequence completed."
+);
 }
 function getBootTime() {
   return new Date().toLocaleTimeString([], {
