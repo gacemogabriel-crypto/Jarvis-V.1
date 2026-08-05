@@ -248,7 +248,20 @@ async function runBootSequence() {
     bootProgress.style.width = `${step.progress}%`;
     bootPercent.textContent = `${step.progress}%`;
     const logLine = document.createElement("p");
-logLine.textContent = `[OK] ${step.message}`;
+const statuses = [
+  "[SYS]",
+  "[MEM]",
+  "[NET]",
+  "[VIS]",
+  "[VOC]",
+  "[CHK]",
+  "[JVS]"
+];
+
+const index = steps.indexOf(step);
+
+logLine.textContent =
+  `${getBootTime()}  ${statuses[index]}  ${step.message}`;
 bootLog.appendChild(logLine);
 bootLog.scrollTop = bootLog.scrollHeight;
 
@@ -267,6 +280,13 @@ bootLog.scrollTop = bootLog.scrollHeight;
     "BOOT",
     "Startup sequence completed."
   );
+}
+function getBootTime() {
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
 }
 runBootSequence();
 updateClock();
